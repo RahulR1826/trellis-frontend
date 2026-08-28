@@ -6,7 +6,8 @@ import {
   ChevronDown,
   ArrowDown,
   Zap,
-  Sprout
+  Sprout,
+  Monitor
 } from 'lucide-react';
 
 interface TrellisGrowthBackgroundProps {
@@ -98,7 +99,7 @@ interface AmbientSpore {
 }
 
 export const TrellisGrowthBackground: React.FC<TrellisGrowthBackgroundProps> = ({
-  opacity = 0.95,
+  opacity = 0.88,
   interactive = true
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -107,6 +108,7 @@ export const TrellisGrowthBackground: React.FC<TrellisGrowthBackgroundProps> = (
   const [species, setSpecies] = useState<PlantSpecies>('jasmine');
   const [growthMode, setGrowthMode] = useState<GrowthMode>('scroll');
   const [breezeStrength, setBreezeStrength] = useState<'calm' | 'gentle' | 'breezy'>('gentle');
+  const [showDesk, setShowDesk] = useState<boolean>(true);
   const [showControls, setShowControls] = useState<boolean>(false);
   const [growthKey, setGrowthKey] = useState<number>(0);
   const [scrollPercent, setScrollPercent] = useState<number>(0);
@@ -140,10 +142,7 @@ export const TrellisGrowthBackground: React.FC<TrellisGrowthBackgroundProps> = (
       );
       const currentScroll = window.scrollY || document.documentElement.scrollTop || 0;
       const rawRatio = Math.min(1.0, Math.max(0, currentScroll / docHeight));
-      
-      // Calculate growth target from scroll:
-      // At top (0% scroll): 28% base sprout
-      // At bottom (100% scroll): 100% full canopy trellis coverage
+
       const target = 0.28 + rawRatio * 0.72;
       scrollTargetRef.current = target;
       setScrollPercent(Math.round(rawRatio * 100));
@@ -223,7 +222,7 @@ export const TrellisGrowthBackground: React.FC<TrellisGrowthBackgroundProps> = (
     // ==========================================
     let slats: Slat[] = [];
     let latticeJoints: LatticeJoint[] = [];
-    const spacing = Math.max(90, Math.min(130, width / 11)); // responsive lattice spacing
+    const spacing = Math.max(90, Math.min(130, width / 11));
     const slatWidth = 15;
 
     function generateTrellis() {
@@ -295,9 +294,13 @@ export const TrellisGrowthBackground: React.FC<TrellisGrowthBackgroundProps> = (
     const numRootVines = Math.max(6, Math.min(12, Math.floor(width / 160)));
     const vines: MainVine[] = [];
 
+    // Desk anchor position
+    const deskH = Math.max(90, Math.min(145, height * 0.16));
+    const deskY = height - deskH;
+
     for (let i = 0; i < numRootVines; i++) {
-      const rootX = (width / (numRootVines + 1)) * (i + 1) + (Math.random() - 0.5) * 50;
-      const rootY = height + 20;
+      const rootX = (width / (numRootVines + 1)) * (i + 1) + (Math.random() - 0.5) * 45;
+      const rootY = showDesk ? deskY + 20 : height + 20;
       const vineColor =
         currentPalette.vines[Math.floor(Math.random() * currentPalette.vines.length)];
       const barkColor =
@@ -317,12 +320,10 @@ export const TrellisGrowthBackground: React.FC<TrellisGrowthBackgroundProps> = (
         const stepHeight = (height * 1.15) / numSegments;
         const targetY = Math.max(-60, curY - stepHeight + (Math.random() - 0.5) * 30);
 
-        // Sinusoidal twining and wandering around lattice
         const wanderFrequency = 0.7 + (i % 3) * 0.2;
         const wander = Math.sin(s * wanderFrequency + i * 1.4) * 60 + (Math.random() - 0.5) * 45;
         const targetX = Math.max(30, Math.min(width - 30, curX + wander));
 
-        // Control points for organic bezier spline curve
         const midY = (curY + targetY) / 2;
         const cp1x = curX + (Math.random() - 0.5) * 45;
         const cp1y = curY - stepHeight * 0.38;
@@ -349,8 +350,7 @@ export const TrellisGrowthBackground: React.FC<TrellisGrowthBackgroundProps> = (
         const leavesPerSeg = 3 + Math.floor(Math.random() * 3);
         for (let l = 0; l < leavesPerSeg; l++) {
           const t = (l + Math.random() * 0.35) / leavesPerSeg;
-          
-          // Cubic Bezier interpolation
+
           const lx =
             Math.pow(1 - t, 3) * curX +
             3 * Math.pow(1 - t, 2) * t * cp1x +
@@ -398,7 +398,7 @@ export const TrellisGrowthBackground: React.FC<TrellisGrowthBackgroundProps> = (
         if (s === 3 || s === 7 || s === 11 || s === 14) {
           const branchSegments: VineSegment[] = [];
           const branchLeaves: Leaf[] = [];
-          
+
           let bCurX = targetX;
           let bCurY = targetY;
           const branchDir = Math.random() > 0.5 ? 1 : -1;
@@ -425,7 +425,6 @@ export const TrellisGrowthBackground: React.FC<TrellisGrowthBackgroundProps> = (
               frontOfWood: bs % 2 === 1
             });
 
-            // Branch leaves
             for (let bl = 0; bl < 2; bl++) {
               const bt = (bl + 0.5) / 2;
               const blx = (1 - bt) * bCurX + bt * bTargetX;
@@ -544,9 +543,8 @@ export const TrellisGrowthBackground: React.FC<TrellisGrowthBackgroundProps> = (
       ctx.clearRect(0, 0, width, height);
 
       // ----------------------------------------
-      // A) DRAW WOODEN TRELLIS FRAMEWORK
+      // A) DRAW WOODEN TRELLIS FRAMEWORK (BEHIND)
       // ----------------------------------------
-      // 1) Soft drop shadow
       ctx.save();
       ctx.shadowColor = 'rgba(20, 10, 5, 0.12)';
       ctx.shadowBlur = 16;
@@ -565,7 +563,6 @@ export const TrellisGrowthBackground: React.FC<TrellisGrowthBackgroundProps> = (
       });
       ctx.restore();
 
-      // 2) Realistic Wood Slat Rendering with Warm Cedar Tones
       const woodTones = {
         base: '#a06a48',
         dark: '#7e4e2c',
@@ -608,7 +605,7 @@ export const TrellisGrowthBackground: React.FC<TrellisGrowthBackgroundProps> = (
         ctx.restore();
       });
 
-      // 3) Lattice Intersections & Peg Joints
+      // Lattice Intersections & Peg Joints
       ctx.save();
       latticeJoints.forEach(joint => {
         ctx.beginPath();
@@ -624,7 +621,7 @@ export const TrellisGrowthBackground: React.FC<TrellisGrowthBackgroundProps> = (
       ctx.restore();
 
       // ----------------------------------------
-      // B) DRAW GROWING VINES, BRANCHES & LEAVES
+      // B) DRAW GROWING VINES, BRANCHES & LEAVES (CLIMBING UP)
       // ----------------------------------------
       vines.forEach(vine => {
         const adjustedTarget = Math.max(
@@ -640,7 +637,6 @@ export const TrellisGrowthBackground: React.FC<TrellisGrowthBackgroundProps> = (
         const fullSegCount = Math.floor(totalSegmentsToDraw);
         const partialSegProg = totalSegmentsToDraw - fullSegCount;
 
-        // Render main vine stem segments
         for (let s = 0; s <= fullSegCount && s < vine.segments.length; s++) {
           const seg = vine.segments[s];
           const isPartial = s === fullSegCount;
@@ -809,7 +805,14 @@ export const TrellisGrowthBackground: React.FC<TrellisGrowthBackgroundProps> = (
       });
 
       // ----------------------------------------
-      // C) OUTER WOODEN FRAME BORDER BEAMS
+      // C) DRAW DESK WITH COMPUTER SETUP & NOTES (IN FRONT OF TRELLIS)
+      // ----------------------------------------
+      if (showDesk) {
+        drawDeskWorkstation(ctx, width, height, time);
+      }
+
+      // ----------------------------------------
+      // D) OUTER WOODEN FRAME BORDER BEAMS
       // ----------------------------------------
       const frameBeams = slats.filter(s => s.type === 'frame');
       frameBeams.forEach(frame => {
@@ -831,7 +834,7 @@ export const TrellisGrowthBackground: React.FC<TrellisGrowthBackgroundProps> = (
       });
 
       // ----------------------------------------
-      // D) FLOATING SUNLIGHT SPORES / POLLEN
+      // E) FLOATING SUNLIGHT SPORES / POLLEN
       // ----------------------------------------
       particles.forEach(p => {
         p.x += p.vx + Math.sin(time * 0.02 + p.y * 0.01) * 0.4;
@@ -863,7 +866,934 @@ export const TrellisGrowthBackground: React.FC<TrellisGrowthBackgroundProps> = (
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseleave', handleMouseLeave);
     };
-  }, [species, growthMode, breezeStrength, interactive, growthKey]);
+  }, [species, growthMode, breezeStrength, showDesk, interactive, growthKey]);
+
+  // =========================================================
+  // DRAW DESK, COMPUTER SETUP, NOTES & PLANTERS IN FOREGROUND
+  // =========================================================
+  function drawDeskWorkstation(
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number,
+    time: number
+  ) {
+    // Normal, realistic desk depth (22% of screen height, min 170px, max 240px)
+    const deskH = Math.max(170, Math.min(240, height * 0.23));
+    const deskY = height - deskH;
+    const centerX = width * 0.5;
+
+    // -------------------------------------------------------
+    // 1. DESK SHADOW ON WALL / BACKGROUND
+    // -------------------------------------------------------
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, deskY - 12, width, 12);
+    const wallShadow = ctx.createLinearGradient(0, deskY - 12, 0, deskY);
+    wallShadow.addColorStop(0, 'rgba(10, 5, 2, 0)');
+    wallShadow.addColorStop(1, 'rgba(10, 5, 2, 0.45)');
+    ctx.fillStyle = wallShadow;
+    ctx.fill();
+
+    // -------------------------------------------------------
+    // 2. SOLID WOOD DESKTOP SURFACE (Rich Polished Walnut / Teak)
+    // -------------------------------------------------------
+    const deskGrad = ctx.createLinearGradient(0, deskY, 0, height);
+    deskGrad.addColorStop(0, '#5a3824');
+    deskGrad.addColorStop(0.06, '#6b432c');
+    deskGrad.addColorStop(0.25, '#4e2f1d');
+    deskGrad.addColorStop(0.65, '#3b2214');
+    deskGrad.addColorStop(1, '#24140a');
+
+    ctx.beginPath();
+    ctx.rect(0, deskY, width, deskH);
+    ctx.fillStyle = deskGrad;
+    ctx.fill();
+
+    // Top beveled highlight edge of desk
+    ctx.beginPath();
+    ctx.moveTo(0, deskY);
+    ctx.lineTo(width, deskY);
+    ctx.strokeStyle = 'rgba(255, 235, 210, 0.42)';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    // Secondary bevel rim
+    ctx.beginPath();
+    ctx.moveTo(0, deskY + 2.5);
+    ctx.lineTo(width, deskY + 2.5);
+    ctx.strokeStyle = 'rgba(30, 15, 8, 0.65)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Subtle Woodgrain Lines across Desk
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+    ctx.lineWidth = 1;
+    for (let wg = 12; wg < deskH; wg += 20) {
+      ctx.beginPath();
+      ctx.moveTo(0, deskY + wg);
+      ctx.bezierCurveTo(
+        width * 0.28,
+        deskY + wg + Math.sin(wg * 0.5) * 3,
+        width * 0.72,
+        deskY + wg - Math.sin(wg * 0.5) * 3,
+        width,
+        deskY + wg
+      );
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // -------------------------------------------------------
+    // 3. WARM ARCHITECT LAMP (Upper Left)
+    // -------------------------------------------------------
+    const lampX = Math.max(70, width * 0.14);
+    const lampY = deskY - 170;
+    ctx.save();
+    
+    // Warm radial light beam
+    const lampCone = ctx.createRadialGradient(
+      lampX + 35,
+      lampY + 25,
+      12,
+      lampX + 60,
+      deskY + 50,
+      320
+    );
+    lampCone.addColorStop(0, 'rgba(254, 240, 138, 0.26)');
+    lampCone.addColorStop(0.35, 'rgba(253, 230, 138, 0.12)');
+    lampCone.addColorStop(0.8, 'rgba(253, 230, 138, 0.03)');
+    lampCone.addColorStop(1, 'rgba(253, 230, 138, 0)');
+    ctx.fillStyle = lampCone;
+    ctx.beginPath();
+    ctx.arc(lampX + 60, deskY + 50, 320, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Lamp Base & Articulated Metallic Arm
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(lampX, deskY + 10);
+    ctx.lineTo(lampX - 12, deskY - 95);
+    ctx.lineTo(lampX + 30, lampY + 20);
+    ctx.stroke();
+
+    // Joints / brass pivot bolts
+    ctx.fillStyle = '#f59e0b';
+    ctx.beginPath();
+    ctx.arc(lampX - 12, deskY - 95, 4.5, 0, Math.PI * 2);
+    ctx.arc(lampX + 30, lampY + 20, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Lamp Shade & Bulb
+    ctx.save();
+    ctx.translate(lampX + 30, lampY + 20);
+    ctx.rotate(0.38);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 22, 14, 0, 0, Math.PI * 2);
+    ctx.fillStyle = '#0f172a';
+    ctx.fill();
+    ctx.strokeStyle = '#64748b';
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
+    
+    // Glowing warm bulb
+    ctx.beginPath();
+    ctx.arc(0, 5, 7, 0, Math.PI * 2);
+    ctx.fillStyle = '#fef08a';
+    ctx.shadowColor = '#facc15';
+    ctx.shadowBlur = 16;
+    ctx.fill();
+    ctx.restore();
+    ctx.restore();
+
+    // -------------------------------------------------------
+    // 4. FELT DESK MAT / LARGE MOUSEPAD (Centered)
+    // -------------------------------------------------------
+    const matW = Math.min(780, Math.max(480, width * 0.68));
+    const matH = Math.min(130, deskH * 0.72);
+    const matX = centerX - matW / 2;
+    const matY = deskY + (deskH - matH) * 0.42;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(matX, matY, matW, matH, 10);
+    ctx.fillStyle = '#16201b'; // Premium dark slate forest felt
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+    ctx.shadowBlur = 12;
+    ctx.shadowOffsetY = 4;
+    ctx.fill();
+
+    // Emerald perimeter stitching
+    ctx.strokeStyle = 'rgba(82, 183, 136, 0.45)';
+    ctx.lineWidth = 1.2;
+    ctx.setLineDash([4, 3]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // -------------------------------------------------------
+    // 5. PROPORTIONATE COMPUTER MONITOR (Realistic 16:10 / 16:9)
+    // -------------------------------------------------------
+    // Realistic monitor dimensions (width ~ 480-560px on desktop, height = width * 0.60)
+    const monW = Math.min(540, Math.max(340, width * 0.46));
+    const monH = Math.round(monW * 0.60); // Proper 16:10 display ratio!
+    const monX = centerX - monW / 2;
+    // Proper ergonomic height clearance above the desk (~40-48px)
+    const standClearance = 44;
+    const monY = deskY - monH - standClearance;
+
+    // A) MONITOR STAND (Heavy Chamfered Aluminum Base + Solid Column)
+    ctx.save();
+    const baseW = monW * 0.36;
+    const baseH = 14;
+    const baseX = centerX - baseW / 2;
+    const baseY = deskY + 12;
+
+    // Base Shadow on Desk
+    ctx.beginPath();
+    ctx.roundRect(baseX - 4, baseY + 4, baseW + 8, baseH + 4, 6);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+    ctx.fill();
+
+    // Solid Aluminum Base Plate
+    const baseGrad = ctx.createLinearGradient(baseX, baseY, baseX, baseY + baseH);
+    baseGrad.addColorStop(0, '#64748b');
+    baseGrad.addColorStop(0.3, '#94a3b8');
+    baseGrad.addColorStop(0.7, '#475569');
+    baseGrad.addColorStop(1, '#1e293b');
+    ctx.beginPath();
+    ctx.roundRect(baseX, baseY, baseW, baseH, 4);
+    ctx.fillStyle = baseGrad;
+    ctx.fill();
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Articulated Stand Column Neck (Elevates screen above desk)
+    const neckW = 32;
+    const neckTopY = monY + monH * 0.65;
+    const neckH = baseY - neckTopY;
+    const neckGrad = ctx.createLinearGradient(centerX - neckW / 2, 0, centerX + neckW / 2, 0);
+    neckGrad.addColorStop(0, '#334155');
+    neckGrad.addColorStop(0.3, '#94a3b8');
+    neckGrad.addColorStop(0.7, '#64748b');
+    neckGrad.addColorStop(1, '#1e293b');
+
+    ctx.beginPath();
+    ctx.roundRect(centerX - neckW / 2, neckTopY, neckW, neckH, 4);
+    ctx.fillStyle = neckGrad;
+    ctx.fill();
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+
+    // B) MONITOR CHASSIS & OUTER FRAME
+    ctx.save();
+    // Ambient monitor drop-shadow onto trellis & desk
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+    ctx.shadowBlur = 32;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 16;
+
+    // Monitor Outer Body (Space-Gray / Obsidian Aluminum)
+    ctx.beginPath();
+    ctx.roundRect(monX, monY, monW, monH, 12);
+    ctx.fillStyle = '#0a0f0d';
+    ctx.fill();
+
+    ctx.strokeStyle = '#2d3748';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    ctx.restore();
+
+    // Slim Bezel Highlight
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(monX + 1, monY + 1, monW - 2, monH - 2, 11);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Top Webcam & Status LED
+    ctx.beginPath();
+    ctx.arc(centerX, monY + 5, 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#0f172a';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(centerX + 6, monY + 5, 1.2, 0, Math.PI * 2);
+    ctx.fillStyle = '#10b981'; // Green active camera LED
+    ctx.shadowColor = '#34d399';
+    ctx.shadowBlur = 4;
+    ctx.fill();
+
+    // Bottom Chin Subtle Logo / Brushed Accent
+    ctx.beginPath();
+    ctx.moveTo(centerX - 18, monY + monH - 4.5);
+    ctx.lineTo(centerX + 18, monY + monH - 4.5);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+    ctx.restore();
+
+    // C) HIGH-RES SCREEN DISPLAY (Active Architecture IDE & Live Topology Visualizer)
+    ctx.save();
+    const bezelThickness = 9;
+    const scrX = monX + bezelThickness;
+    const scrY = monY + bezelThickness;
+    const scrW = monW - bezelThickness * 2;
+    const scrH = monH - bezelThickness * 2 - 8;
+
+    // Screen Canvas Background (Deep Emerald Obsidian IDE)
+    ctx.beginPath();
+    ctx.roundRect(scrX, scrY, scrW, scrH, 6);
+    ctx.fillStyle = '#06120d';
+    ctx.fill();
+
+    // Clip all inner screen contents cleanly inside display
+    ctx.beginPath();
+    ctx.roundRect(scrX, scrY, scrW, scrH, 6);
+    ctx.clip();
+
+    // 1. Top IDE Tab Bar
+    const tabH = 18;
+    ctx.fillStyle = '#0d241a';
+    ctx.fillRect(scrX, scrY, scrW, tabH);
+
+    // Window Traffic Light Dots (🔴 🟡 🟢)
+    const dotY = scrY + tabH * 0.5;
+    ctx.beginPath();
+    ctx.arc(scrX + 10, dotY, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#ef4444';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(scrX + 18, dotY, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#f59e0b';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(scrX + 26, dotY, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#10b981';
+    ctx.fill();
+
+    // Active Tab 1: trellis-engine.ts
+    ctx.fillStyle = '#06120d';
+    ctx.beginPath();
+    ctx.roundRect(scrX + 38, scrY + 2, 110, tabH - 2, [4, 4, 0, 0]);
+    ctx.fill();
+    ctx.fillStyle = '#6ee7b7';
+    ctx.font = 'bold 7.5px monospace';
+    ctx.fillText('🌿 trellis-engine.ts', scrX + 44, scrY + 12);
+
+    // Inactive Tab 2: system-mesh.tsx
+    ctx.fillStyle = '#34d399';
+    ctx.globalAlpha = 0.55;
+    ctx.font = '7px monospace';
+    ctx.fillText('📐 topology.tsx', scrX + 158, scrY + 12);
+    ctx.globalAlpha = 1.0;
+
+    // Divider Line under tabs
+    ctx.strokeStyle = '#1a3d2e';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(scrX, scrY + tabH);
+    ctx.lineTo(scrX + scrW, scrY + tabH);
+    ctx.stroke();
+
+    // 2. Left Sidebar (Project Explorer)
+    const sideW = Math.min(100, scrW * 0.22);
+    ctx.fillStyle = '#081a13';
+    ctx.fillRect(scrX, scrY + tabH, sideW, scrH - tabH - 14);
+
+    // Sidebar Items
+    ctx.fillStyle = '#52b788';
+    ctx.font = 'bold 6.5px monospace';
+    ctx.fillText('EXPLORER', scrX + 6, scrY + tabH + 11);
+
+    const explorerFiles = [
+      { name: '▼ src', isDir: true, color: '#93c5fd' },
+      { name: '  ► core/', isDir: true, color: '#93c5fd' },
+      { name: '    trellis.ts', isDir: false, color: '#6ee7b7' },
+      { name: '    raft.go', isDir: false, color: '#fbbf24' },
+      { name: '    mesh.proto', isDir: false, color: '#f472b6' },
+      { name: '  ► network/', isDir: true, color: '#93c5fd' },
+      { name: '    topology.ts', isDir: false, color: '#6ee7b7' }
+    ];
+
+    explorerFiles.forEach((file, fIdx) => {
+      const fY = scrY + tabH + 22 + fIdx * 11;
+      if (fY > scrY + scrH - 20) return;
+      ctx.fillStyle = file.color;
+      ctx.font = '6px monospace';
+      ctx.fillText(file.name, scrX + 6, fY);
+    });
+
+    // Vertical Divider after sidebar
+    ctx.strokeStyle = '#1a3d2e';
+    ctx.beginPath();
+    ctx.moveTo(scrX + sideW, scrY + tabH);
+    ctx.lineTo(scrX + sideW, scrY + scrH - 14);
+    ctx.stroke();
+
+    // 3. Center Code Editor Area
+    const editorX = scrX + sideW + 4;
+    const editorW = scrW * 0.44;
+
+    // Line Numbers & Code Lines
+    const codeLines = [
+      { num: '01', tokens: [{ t: 'import', c: '#f472b6' }, { t: ' { TrellisMesh }', c: '#fde047' }, { t: ' from', c: '#f472b6' }, { t: ' "core";', c: '#a7f3d0' }] },
+      { num: '02', tokens: [{ t: 'import', c: '#f472b6' }, { t: ' { RaftCluster }', c: '#fde047' }, { t: ' from', c: '#f472b6' }, { t: ' "consensus";', c: '#a7f3d0' }] },
+      { num: '03', tokens: [{ t: '', c: '' }] },
+      { num: '04', tokens: [{ t: 'export', c: '#f472b6' }, { t: ' async', c: '#60a5fa' }, { t: ' function', c: '#60a5fa' }, { t: ' initTopology', c: '#fde047' }, { t: '() {', c: '#e2e8f0' }] },
+      { num: '05', tokens: [{ t: '  const', c: '#60a5fa' }, { t: ' mesh', c: '#93c5fd' }, { t: ' =', c: '#f472b6' }, { t: ' new', c: '#60a5fa' }, { t: ' TrellisMesh', c: '#fde047' }, { t: '({', c: '#e2e8f0' }] },
+      { num: '06', tokens: [{ t: '    qpsTarget:', c: '#6ee7b7' }, { t: ' 100_000,', c: '#fbbf24' }] },
+      { num: '07', tokens: [{ t: '    p99LatencyMs:', c: '#6ee7b7' }, { t: ' 15,', c: '#fbbf24' }] },
+      { num: '08', tokens: [{ t: '    replicas:', c: '#6ee7b7' }, { t: ' 5,', c: '#fbbf24' }] },
+      { num: '09', tokens: [{ t: '    autoHeal:', c: '#6ee7b7' }, { t: ' true', c: '#f472b6' }] },
+      { num: '10', tokens: [{ t: '  });', c: '#e2e8f0' }] },
+      { num: '11', tokens: [{ t: '  await', c: '#f472b6' }, { t: ' mesh.', c: '#93c5fd' }, { t: 'startSync', c: '#fde047' }, { t: '();', c: '#e2e8f0' }] },
+      { num: '12', tokens: [{ t: '}', c: '#e2e8f0' }] }
+    ];
+
+    // Highlight active line (Line 07)
+    const activeLineY = scrY + tabH + 6 + 6 * 11;
+    ctx.fillStyle = 'rgba(82, 183, 136, 0.12)';
+    ctx.fillRect(editorX, activeLineY - 1, editorW + 40, 11);
+
+    codeLines.forEach((line, lIdx) => {
+      const lineY = scrY + tabH + 6 + lIdx * 11;
+      if (lineY > scrY + scrH - 20) return;
+
+      // Line Number
+      ctx.fillStyle = '#3e6351';
+      ctx.font = '6px monospace';
+      ctx.fillText(line.num, editorX + 2, lineY + 7);
+
+      // Code Tokens
+      let tokenX = editorX + 16;
+      line.tokens.forEach(tok => {
+        if (!tok.t) return;
+        ctx.fillStyle = tok.c;
+        ctx.font = '6px monospace';
+        ctx.fillText(tok.t, tokenX, lineY + 7);
+        tokenX += ctx.measureText(tok.t).width;
+      });
+    });
+
+    // Blinking Cursor on Active Line
+    if (Math.floor(time / 20) % 2 === 0) {
+      const curX = editorX + 115;
+      ctx.fillStyle = '#10b981';
+      ctx.fillRect(curX, activeLineY + 1, 4, 8);
+    }
+
+    // 4. Right Live Architecture Topology Visualizer
+    const topoX = scrX + scrW * 0.68;
+    const topoW = scrW - (topoX - scrX) - 6;
+    const topoH = scrH - tabH - 18;
+
+    // Topology Container Box
+    ctx.fillStyle = '#081e15';
+    ctx.beginPath();
+    ctx.roundRect(topoX, scrY + tabH + 4, topoW, topoH, 4);
+    ctx.fill();
+    ctx.strokeStyle = '#1e4d3a';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Topology Header
+    ctx.fillStyle = '#6ee7b7';
+    ctx.font = 'bold 6px monospace';
+    ctx.fillText('LIVE TOPOLOGY // 104k QPS', topoX + 6, scrY + tabH + 14);
+
+    // Interactive Topology Nodes (Gateway -> Replicas -> Consensus)
+    const tCenterY = scrY + tabH + 4 + topoH * 0.55;
+    const tNodes = [
+      { x: topoX + 20, y: tCenterY - 18, label: 'GATEWAY', color: '#60a5fa' },
+      { x: topoX + topoW - 22, y: tCenterY - 26, label: 'RAFT-01', color: '#34d399' },
+      { x: topoX + topoW - 22, y: tCenterY + 14, label: 'RAFT-02', color: '#a78bfa' },
+      { x: topoX + topoW * 0.5, y: tCenterY + 28, label: 'CACHE', color: '#fbbf24' }
+    ];
+
+    // Connection Bus Wires
+    ctx.strokeStyle = 'rgba(82, 183, 136, 0.45)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(tNodes[0].x, tNodes[0].y);
+    ctx.lineTo(tNodes[1].x, tNodes[1].y);
+    ctx.moveTo(tNodes[0].x, tNodes[0].y);
+    ctx.lineTo(tNodes[2].x, tNodes[2].y);
+    ctx.moveTo(tNodes[0].x, tNodes[0].y);
+    ctx.lineTo(tNodes[3].x, tNodes[3].y);
+    ctx.stroke();
+
+    // Animated Neon Glowing Data Packets
+    const pktProgress1 = (time * 0.025) % 1;
+    const pktX1 = (1 - pktProgress1) * tNodes[0].x + pktProgress1 * tNodes[1].x;
+    const pktY1 = (1 - pktProgress1) * tNodes[0].y + pktProgress1 * tNodes[1].y;
+
+    const pktProgress2 = ((time + 25) * 0.025) % 1;
+    const pktX2 = (1 - pktProgress2) * tNodes[0].x + pktProgress2 * tNodes[2].x;
+    const pktY2 = (1 - pktProgress2) * tNodes[0].y + pktProgress2 * tNodes[2].y;
+
+    ctx.beginPath();
+    ctx.arc(pktX1, pktY1, 2.5, 0, Math.PI * 2);
+    ctx.arc(pktX2, pktY2, 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#6ee7b7';
+    ctx.shadowColor = '#34d399';
+    ctx.shadowBlur = 8;
+    ctx.fill();
+
+    // Render Node Circles & Labels
+    tNodes.forEach(n => {
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, 6.5, 0, Math.PI * 2);
+      ctx.fillStyle = n.color;
+      ctx.shadowColor = n.color;
+      ctx.shadowBlur = 6;
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 4.5px sans-serif';
+      ctx.fillText(n.label, n.x - 12, n.y + 12);
+    });
+
+    // 5. IDE Bottom Status Bar
+    const statusY = scrY + scrH - 12;
+    ctx.fillStyle = '#081a13';
+    ctx.fillRect(scrX, statusY, scrW, 12);
+
+    ctx.fillStyle = '#52b788';
+    ctx.font = '5.5px monospace';
+    ctx.fillText('⎇ main*  |  TypeScript 5.4  |  UTF-8  |  🟢 Engine: Active (11ms)', scrX + 6, statusY + 8.5);
+
+    // Screen Glass Reflection / Specular Sheen (Diagonal Soft Glow)
+    const glassGrad = ctx.createLinearGradient(scrX, scrY, scrX + scrW, scrY + scrH);
+    glassGrad.addColorStop(0, 'rgba(255, 255, 255, 0.08)');
+    glassGrad.addColorStop(0.3, 'rgba(255, 255, 255, 0.02)');
+    glassGrad.addColorStop(0.6, 'rgba(255, 255, 255, 0)');
+    glassGrad.addColorStop(1, 'rgba(255, 255, 255, 0.04)');
+    ctx.fillStyle = glassGrad;
+    ctx.fillRect(scrX, scrY, scrW, scrH);
+
+    ctx.restore();
+
+    // -------------------------------------------------------
+    // 6. ENGINEERING STICKY NOTES PINNED TO SETUP & TRELLIS
+    // -------------------------------------------------------
+    
+    // Note 1: Canary Yellow Post-It pinned to top-right monitor frame
+    ctx.save();
+    const note1X = monX + monW - 28;
+    const note1Y = monY + 12;
+    ctx.translate(note1X, note1Y);
+    ctx.rotate(0.09);
+    
+    // Shadow
+    ctx.beginPath();
+    ctx.roundRect(0, 0, 48, 44, 2);
+    ctx.fillStyle = '#fef08a'; // Bright Yellow
+    ctx.shadowColor = 'rgba(0,0,0,0.32)';
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 4;
+    ctx.fill();
+
+    // Top translucent tape strip
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+    ctx.fillRect(14, -3, 20, 7);
+
+    // Handwritten note text
+    ctx.fillStyle = '#854d0e';
+    ctx.font = 'bold 6.5px sans-serif';
+    ctx.fillText('⚡ SHARD DB', 4, 11);
+    ctx.font = '5.5px sans-serif';
+    ctx.fillText('• 100k QPS Goal', 4, 20);
+    ctx.fillText('• P99 < 15ms', 4, 28);
+    ctx.fillText('• Raft Replicas = 5', 4, 36);
+    ctx.restore();
+
+    // Note 2: Mint Green Post-It pinned to bottom-left monitor frame
+    ctx.save();
+    const note2X = monX - 16;
+    const note2Y = monY + monH - 65;
+    ctx.translate(note2X, note2Y);
+    ctx.rotate(-0.08);
+
+    ctx.beginPath();
+    ctx.roundRect(0, 0, 46, 42, 2);
+    ctx.fillStyle = '#a7f3d0'; // Mint Green
+    ctx.shadowColor = 'rgba(0,0,0,0.3)';
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 4;
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+    ctx.fillRect(13, -3, 20, 7);
+
+    ctx.fillStyle = '#065f46';
+    ctx.font = 'bold 6px sans-serif';
+    ctx.fillText('🌱 TRELLIS 5-AXIS', 4, 11);
+    ctx.font = '5.5px sans-serif';
+    ctx.fillText('• Organic Climbing', 4, 20);
+    ctx.fillText('• Auto-Bloom Lerp', 4, 28);
+    ctx.fillText('• Spring Growth', 4, 36);
+    ctx.restore();
+
+    // Note 3: Warm Peach Index Card pinned directly to Wooden Trellis slat behind monitor
+    ctx.save();
+    const note3X = centerX + monW * 0.44;
+    const note3Y = monY - 32;
+    ctx.translate(note3X, note3Y);
+    ctx.rotate(0.06);
+
+    ctx.beginPath();
+    ctx.roundRect(0, 0, 52, 46, 3);
+    ctx.fillStyle = '#fecdd3'; // Warm Peach
+    ctx.shadowColor = 'rgba(0,0,0,0.35)';
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetY = 5;
+    ctx.fill();
+
+    // Wooden Thumbtack / Push-Pin at top center
+    ctx.beginPath();
+    ctx.arc(26, 4, 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#d97706';
+    ctx.shadowColor = '#b45309';
+    ctx.shadowBlur = 4;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(25, 3, 1.2, 0, Math.PI * 2);
+    ctx.fillStyle = '#fef3c7';
+    ctx.fill();
+
+    ctx.fillStyle = '#9f1239';
+    ctx.font = 'bold 6.5px sans-serif';
+    ctx.fillText('📐 ARCHITECTURE', 4, 14);
+    ctx.font = '5px sans-serif';
+    ctx.fillText('✓ Raft Consensus', 4, 23);
+    ctx.fillText('✓ Cache-Aside Bus', 4, 31);
+    ctx.fillText('✓ Zero-Downtime Roll', 4, 39);
+    ctx.restore();
+
+    // -------------------------------------------------------
+    // 7. OPEN SPIRAL ENGINEERING SKETCHPAD (Left Desk Area)
+    // -------------------------------------------------------
+    const bookX = Math.max(90, centerX - matW * 0.44);
+    const bookY = deskY + 16;
+    const bookW = Math.min(130, width * 0.16);
+    const bookH = 86;
+
+    ctx.save();
+    ctx.translate(bookX, bookY);
+    ctx.rotate(-0.03);
+
+    // Hardcover Shadow & Base
+    ctx.beginPath();
+    ctx.roundRect(-3, -3, bookW + 6, bookH + 6, 6);
+    ctx.fillStyle = '#0f291e'; // Deep Forest Leather
+    ctx.shadowColor = 'rgba(0,0,0,0.45)';
+    ctx.shadowBlur = 12;
+    ctx.shadowOffsetY = 6;
+    ctx.fill();
+
+    // 2-Page Grid Engineering Paper
+    ctx.beginPath();
+    ctx.roundRect(0, 0, bookW, bookH, 4);
+    ctx.fillStyle = '#f8fafc';
+    ctx.fill();
+
+    // Center Crease / Split
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(bookW * 0.5, 0);
+    ctx.lineTo(bookW * 0.5, bookH);
+    ctx.stroke();
+
+    // Engineering Grid Lines
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+    ctx.lineWidth = 0.6;
+    for (let gy = 8; gy < bookH; gy += 7) {
+      ctx.beginPath();
+      ctx.moveTo(4, gy);
+      ctx.lineTo(bookW - 4, gy);
+      ctx.stroke();
+    }
+
+    // Left Page: Hand-drawn Architecture Diagram
+    ctx.strokeStyle = '#0284c7';
+    ctx.lineWidth = 1.2;
+    ctx.strokeRect(8, 16, 20, 14);
+    ctx.strokeRect(34, 16, 20, 14);
+    ctx.beginPath();
+    ctx.moveTo(28, 23);
+    ctx.lineTo(34, 23);
+    ctx.stroke();
+
+    ctx.fillStyle = '#0369a1';
+    ctx.font = 'bold 5px sans-serif';
+    ctx.fillText('Client', 11, 25);
+    ctx.fillText('Ingress', 36, 25);
+
+    // Right Page: Handwritten Blueprint Checklist
+    ctx.fillStyle = '#1e293b';
+    ctx.font = 'bold 6px sans-serif';
+    ctx.fillText('Lattice Notes', bookW * 0.5 + 6, 14);
+    ctx.font = '5px sans-serif';
+    ctx.fillText('• 5-Axis Radar', bookW * 0.5 + 6, 26);
+    ctx.fillText('• Microservice Mesh', bookW * 0.5 + 6, 36);
+    ctx.fillText('• Auto-Bloom Lerp', bookW * 0.5 + 6, 46);
+    ctx.fillText('• Zero Cold Starts', bookW * 0.5 + 6, 56);
+
+    // Center Spiral Wire Rings
+    for (let r = 8; r < bookH; r += 9) {
+      ctx.beginPath();
+      ctx.arc(bookW * 0.5, r, 2.8, 0, Math.PI * 2);
+      ctx.fillStyle = '#94a3b8';
+      ctx.fill();
+    }
+
+    // Drafting Fountain Pen Resting across Notebook
+    ctx.save();
+    ctx.translate(bookW - 16, 8);
+    ctx.rotate(0.42);
+    ctx.beginPath();
+    ctx.roundRect(-2.5, 0, 5, 62, 2);
+    ctx.fillStyle = '#090d0b'; // Obsidian pen barrel
+    ctx.shadowColor = 'rgba(0,0,0,0.3)';
+    ctx.shadowBlur = 6;
+    ctx.fill();
+
+    // Metallic Brass Pen Clip & Gold Nib
+    ctx.fillStyle = '#fbbf24';
+    ctx.fillRect(-1.5, 8, 3, 16);
+    ctx.beginPath();
+    ctx.moveTo(-2.5, 62);
+    ctx.lineTo(2.5, 62);
+    ctx.lineTo(0, 70);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    ctx.restore();
+
+    // -------------------------------------------------------
+    // 8. MECHANICAL KEYBOARD & ERGONOMIC MOUSE (On Mat)
+    // -------------------------------------------------------
+    // 75% Mechanical Keyboard
+    const kbW = Math.min(260, monW * 0.65);
+    const kbH = 46;
+    const kbX = centerX - kbW / 2 - 25;
+    const kbY = deskY + (deskH - kbH) * 0.44;
+
+    ctx.save();
+    // Keyboard Body Shadow & Aluminum Case
+    ctx.beginPath();
+    ctx.roundRect(kbX, kbY, kbW, kbH, 6);
+    ctx.fillStyle = '#0f172a';
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 12;
+    ctx.shadowOffsetY = 4;
+    ctx.fill();
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+
+    // Subtle Cyan/Emerald Underglow
+    ctx.shadowColor = '#10b981';
+    ctx.shadowBlur = 8;
+
+    // Keycaps Grid (6 Rows: Function, Numbers, QWERTY, ASDF, ZXCV, Spacebar)
+    const kRows = 5;
+    const kCols = 15;
+    const kw = (kbW - 12) / kCols;
+    const kh = (kbH - 10) / kRows;
+
+    for (let r = 0; r < kRows; r++) {
+      for (let c = 0; c < kCols; c++) {
+        // Spacebar Row
+        if (r === 4 && c >= 4 && c <= 10) {
+          if (c === 4) {
+            ctx.beginPath();
+            ctx.roundRect(kbX + 6 + c * kw, kbY + 5 + r * kh, kw * 7 - 2, kh - 1.5, 2);
+            ctx.fillStyle = '#334155';
+            ctx.fill();
+          }
+          continue;
+        }
+
+        // Enter & Modifier Accent Keys
+        const isAccent = (r === 2 && c === kCols - 1) || (r === 3 && c === 0);
+        ctx.beginPath();
+        ctx.roundRect(kbX + 6 + c * kw, kbY + 5 + r * kh, kw - 1.5, kh - 1.5, 1.8);
+        ctx.fillStyle = isAccent ? '#047857' : '#1e293b';
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+
+    // Ergonomic Precision Mouse
+    const mouseX = kbX + kbW + 28;
+    const mouseY = kbY + 2;
+    const mouseW = 24;
+    const mouseH = 38;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(mouseX, mouseY, mouseW, mouseH, 10);
+    ctx.fillStyle = '#0f172a';
+    ctx.shadowColor = 'rgba(0,0,0,0.4)';
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 4;
+    ctx.fill();
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Click split & illuminated emerald scroll wheel
+    ctx.beginPath();
+    ctx.moveTo(mouseX + mouseW / 2, mouseY);
+    ctx.lineTo(mouseX + mouseW / 2, mouseY + 14);
+    ctx.strokeStyle = '#1e293b';
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.roundRect(mouseX + mouseW / 2 - 1.5, mouseY + 4, 3, 8, 1.5);
+    ctx.fillStyle = '#10b981';
+    ctx.shadowColor = '#34d399';
+    ctx.shadowBlur = 6;
+    ctx.fill();
+    ctx.restore();
+
+    // -------------------------------------------------------
+    // 9. STEAMING ARTISAN COFFEE MUG ON CORK COASTER
+    // -------------------------------------------------------
+    const mugX = Math.min(width - 80, centerX + monW * 0.5 + 75);
+    const mugY = deskY + 22;
+    ctx.save();
+
+    // Cork Coaster
+    ctx.beginPath();
+    ctx.ellipse(mugX, mugY + 26, 18, 8, 0, 0, Math.PI * 2);
+    ctx.fillStyle = '#b45309';
+    ctx.shadowColor = 'rgba(0,0,0,0.3)';
+    ctx.shadowBlur = 6;
+    ctx.fill();
+
+    // Ceramic Deep Emerald Mug
+    ctx.beginPath();
+    ctx.roundRect(mugX - 14, mugY, 28, 26, [2, 2, 9, 9]);
+    ctx.fillStyle = '#064e3b';
+    ctx.shadowColor = 'rgba(0,0,0,0.35)';
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 4;
+    ctx.fill();
+    ctx.strokeStyle = '#52b788';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+
+    // Mug Handle
+    ctx.beginPath();
+    ctx.arc(mugX + 15, mugY + 13, 7, -Math.PI / 2, Math.PI / 2);
+    ctx.strokeStyle = '#064e3b';
+    ctx.lineWidth = 3.5;
+    ctx.stroke();
+
+    // Hot Coffee Liquid
+    ctx.beginPath();
+    ctx.ellipse(mugX, mugY + 2.5, 12, 3.5, 0, 0, Math.PI * 2);
+    ctx.fillStyle = '#451a03';
+    ctx.fill();
+
+    // Rising Steaming Vapor Wisps
+    const sOffset = (time * 0.04) % (Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.38)';
+    ctx.lineWidth = 1.4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(mugX - 4, mugY - 2);
+    ctx.bezierCurveTo(
+      mugX - 8 + Math.sin(sOffset) * 5,
+      mugY - 14,
+      mugX + Math.cos(sOffset) * 5,
+      mugY - 24,
+      mugX - 3,
+      mugY - 34
+    );
+    ctx.moveTo(mugX + 4, mugY - 2);
+    ctx.bezierCurveTo(
+      mugX + 8 + Math.cos(sOffset) * 5,
+      mugY - 12,
+      mugX + Math.sin(sOffset) * 5,
+      mugY - 22,
+      mugX + 5,
+      mugY - 32
+    );
+    ctx.stroke();
+    ctx.restore();
+
+    // -------------------------------------------------------
+    // 10. BOTANICAL DESK PLANTERS (Vines Root & Sprout Up!)
+    // -------------------------------------------------------
+    // Left Terracotta Planter Pot
+    const pot1X = Math.max(35, width * 0.07);
+    const pot1Y = deskY - 14;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(pot1X - 18, pot1Y);
+    ctx.lineTo(pot1X + 18, pot1Y);
+    ctx.lineTo(pot1X + 13, pot1Y + 38);
+    ctx.lineTo(pot1X - 13, pot1Y + 38);
+    ctx.closePath();
+    ctx.fillStyle = '#c2410c';
+    ctx.shadowColor = 'rgba(0,0,0,0.35)';
+    ctx.shadowBlur = 12;
+    ctx.shadowOffsetY = 6;
+    ctx.fill();
+
+    // Pot Rim
+    ctx.beginPath();
+    ctx.roundRect(pot1X - 20, pot1Y - 5, 40, 9, 3);
+    ctx.fillStyle = '#ea580c';
+    ctx.fill();
+
+    // Rich Dark Moist Soil
+    ctx.beginPath();
+    ctx.ellipse(pot1X, pot1Y, 16, 4.5, 0, 0, Math.PI * 2);
+    ctx.fillStyle = '#27170c';
+    ctx.fill();
+    ctx.restore();
+
+    // Right Glazed Ceramic Planter Pot
+    const pot2X = Math.min(width - 35, width * 0.93);
+    const pot2Y = deskY - 16;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(pot2X - 20, pot2Y);
+    ctx.lineTo(pot2X + 20, pot2Y);
+    ctx.lineTo(pot2X + 15, pot2Y + 40);
+    ctx.lineTo(pot2X - 15, pot2Y + 40);
+    ctx.closePath();
+    ctx.fillStyle = '#064e3b';
+    ctx.shadowColor = 'rgba(0,0,0,0.35)';
+    ctx.shadowBlur = 12;
+    ctx.shadowOffsetY = 6;
+    ctx.fill();
+
+    // Pot Rim
+    ctx.beginPath();
+    ctx.roundRect(pot2X - 22, pot2Y - 5, 44, 9, 3);
+    ctx.fillStyle = '#047857';
+    ctx.fill();
+
+    // Rich Dark Moist Soil
+    ctx.beginPath();
+    ctx.ellipse(pot2X, pot2Y, 18, 4.5, 0, 0, Math.PI * 2);
+    ctx.fillStyle = '#27170c';
+    ctx.fill();
+    ctx.restore();
+  }
 
   function drawLeaf(
     ctx: CanvasRenderingContext2D,
@@ -976,7 +1906,7 @@ export const TrellisGrowthBackground: React.FC<TrellisGrowthBackgroundProps> = (
       className="fixed inset-0 w-full h-full pointer-events-none transition-opacity duration-700 z-0 overflow-hidden"
       style={{ opacity }}
     >
-      {/* 2D High-Performance Organic Trellis Canvas */}
+      {/* 2D High-Performance Organic Trellis & Architect Desk Canvas */}
       <canvas
         ref={canvasRef}
         className="w-full h-full block"
@@ -1021,6 +1951,24 @@ export const TrellisGrowthBackground: React.FC<TrellisGrowthBackgroundProps> = (
           {showControls && (
             <div className="mt-3 pt-3 border-t border-gray-200 dark:border-[#1e4d3a]/60 space-y-3.5 w-72 animate-in fade-in slide-in-from-bottom-2 duration-200">
               
+              {/* Desk & Workstation Toggle */}
+              <div className="flex items-center justify-between pb-1 border-b border-gray-100 dark:border-[#1e4d3a]/40">
+                <span className="text-[11px] font-bold text-gray-700 dark:text-gray-200 flex items-center gap-1.5">
+                  <Monitor className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>Desk & Setup Layer</span>
+                </span>
+                <button
+                  onClick={() => setShowDesk(!showDesk)}
+                  className={`px-2 py-0.5 rounded-md text-[10px] font-semibold transition-all cursor-pointer ${
+                    showDesk
+                      ? 'bg-[#003527] dark:bg-[#52b788] text-white dark:text-[#06110d]'
+                      : 'bg-gray-200 dark:bg-[#1e4d3a] text-gray-600 dark:text-gray-300'
+                  }`}
+                >
+                  {showDesk ? 'Visible' : 'Hidden'}
+                </button>
+              </div>
+
               {/* Growth Trigger Mode */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
@@ -1068,7 +2016,7 @@ export const TrellisGrowthBackground: React.FC<TrellisGrowthBackgroundProps> = (
                 </div>
                 {growthMode === 'scroll' && (
                   <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1.5 italic">
-                    🌱 Scroll down the landing page to watch the vines climb the trellis!
+                    🌱 Scroll down the landing page to watch the vines climb from the desk up the trellis!
                   </p>
                 )}
               </div>
