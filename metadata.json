@@ -1,0 +1,6 @@
+{
+  "name": "Trellis",
+  "description": "Personalized growth trellis and interactive learning path recommender with dynamic skill radar, organic milestone graph, and AI architecture guide.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
