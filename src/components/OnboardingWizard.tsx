@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { TrellisLogo } from './TrellisLogo';
 import { StemProgressBar } from './StemProgressBar';
 import Stepper, { Step } from './Stepper';
+import { ResumeDropper } from './ResumeDropper';
 import { createLearningProfile, generatePersonalizedRoadmap, saveGeneratedRoadmap, saveLearningProfile } from '../services/learningPathEngine';
 import {
   Sparkles,
@@ -194,84 +195,27 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
           nextButtonText="Continue"
           backButtonText="Back"
         >
-          {/* STEP 1: RESUME UPLOAD */}
+          {/* STEP 1: RESUME UPLOAD (AI RESUME DROPPER) */}
           <Step key="step-1">
             <div className="space-y-6 animate-in fade-in duration-300">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                  Step 1: Fast-Track Skill Calibration (Optional)
-                </span>
-                <h2 className="font-literata text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mt-1">
-                  Upload a resume to infer initial skills
-                </h2>
-                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                  Trellis uses your background as a starting point. Resume upload is completely optional and never required.
-                </p>
-              </div>
-
-              {!resumeFile ? (
-                <div
-                  onDragOver={e => { e.preventDefault(); setIsDragOver(true); }}
-                  onDragLeave={() => setIsDragOver(false)}
-                  onDrop={handleFileDrop}
-                  onClick={() => fileInputRef.current?.click()}
-                  className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all ${
-                    isDragOver
-                      ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20'
-                      : 'border-slate-300 dark:border-slate-700 hover:border-emerald-500 bg-slate-50/50 dark:bg-slate-800/40'
-                  }`}
-                >
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".pdf,.doc,.docx,.txt"
-                    className="hidden"
-                    onChange={e => {
-                      const file = e.target.files?.[0];
-                      if (file) handleResumeFile(file);
-                    }}
-                  />
-                  <Upload className="w-9 h-9 mx-auto text-slate-400 dark:text-slate-500 mb-2.5" />
-                  <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                    Drag & drop your resume here, or <span className="text-emerald-600 dark:text-emerald-400 underline">browse files</span>
-                  </p>
-                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                    PDF, DOC, DOCX, or TXT · Processed locally for skill inference
-                  </p>
-                </div>
-              ) : (
-                <div className="p-4 rounded-2xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/50 dark:bg-emerald-950/20 space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center">
-                      <FileText className="w-5 h-5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{resumeFile.name}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        {isParsingResume ? 'Analysing for skill signals...' : resumeParsed ? 'Skills inferred — review on step 3' : ''}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => { setResumeFile(null); setResumeParsed(false); }}
-                      className="text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                  {isParsingResume && (
-                    <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                      <div className="h-full bg-emerald-500 rounded-full animate-pulse w-3/4" />
-                    </div>
-                  )}
-                  {resumeParsed && (
-                    <div className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400 font-medium">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Resume parsed: starting skill levels adjusted</span>
-                    </div>
-                  )}
-                </div>
-              )}
+              <ResumeDropper
+                onParsed={data => {
+                  setResumeFile({ name: data.fileName } as any);
+                  setResumeParsed(true);
+                  setSkills(prev => ({
+                    ...prev,
+                    ...data.inferredSkills
+                  }));
+                  if (data.detectedTags?.length) {
+                    setHistoryTags(prev => Array.from(new Set([...prev, ...data.detectedTags])));
+                  }
+                  // Move to step 2 after a brief delay
+                  setTimeout(() => {
+                    setStep(2);
+                  }, 400);
+                }}
+                onSkip={() => setStep(2)}
+              />
             </div>
           </Step>
 

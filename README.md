@@ -76,3 +76,4 @@ Open **[http://localhost:8050](http://localhost:8050)** in your browser.
 
 ## 📄 License
 MIT License
+
