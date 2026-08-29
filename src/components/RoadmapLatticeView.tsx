@@ -74,68 +74,67 @@ export const RoadmapLatticeView: React.FC<RoadmapLatticeViewProps> = ({
         particleCount: 50,
         spread: 60,
         origin: { y: 0.6 },
-        colors: ['#52b788', '#f59e0b', '#2d6a4f', '#fbbf24']
+        colors: ['#10b981', '#f59e0b', '#059669', '#fbbf24']
       });
     }
     onSelectNode(node);
   };
 
-  // Helper to render distinct botanical icons per node type
+  // Helper to render distinct badges per node type
   const renderNodeTypeIcon = (type: NodeType) => {
     switch (type) {
       case 'course':
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#1b4332] dark:text-[#52b788]">
-            <Leaf className="w-3.5 h-3.5 text-[#2d6a4f] dark:text-[#52b788]" />
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
+            <Leaf className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             <span>Course Module</span>
           </span>
         );
       case 'project':
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#d97706] dark:text-[#fbbf24]">
-            <Sparkles className="w-3.5 h-3.5 text-[#f59e0b]" />
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 dark:text-amber-300">
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
             <span>Hands-on Project</span>
           </span>
         );
       case 'checkpoint':
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#b45309] dark:text-[#fde047]">
-            <Flower2 className="w-3.5 h-3.5 text-[#f59e0b]" />
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-600 dark:text-amber-300">
+            <Flower2 className="w-3.5 h-3.5 text-amber-500" />
             <span>Mastery Checkpoint</span>
           </span>
         );
     }
   };
 
-  // Helper to render botanical visual state (Bud / Leaf / Bloom / Dormant)
   const renderBotanicalStatusBadge = (status: NodeStatus) => {
     switch (status) {
       case 'done':
         return (
-          <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#f59e0b]/15 dark:bg-[#fbbf24]/20 border border-[#f59e0b]/30 text-[#b45309] dark:text-[#fbbf24] text-xs font-bold animate-in zoom-in duration-300">
-            <span className="text-sm">🌸</span>
-            <span>Bloomed</span>
+          <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-bold">
+            <span>🌸</span>
+            <span>Mastered</span>
           </div>
         );
       case 'in-progress':
         return (
-          <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#52b788]/20 dark:bg-[#52b788]/30 border border-[#52b788]/50 text-[#003527] dark:text-[#a7f3d0] text-xs font-bold animate-pulse">
-            <span className="text-sm">🍃</span>
-            <span>Unfurling</span>
+          <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 text-xs font-bold animate-pulse">
+            <span>🍃</span>
+            <span>In Progress</span>
           </div>
         );
       case 'available':
         return (
-          <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#2d6a4f]/10 dark:bg-[#2d6a4f]/30 border border-[#2d6a4f]/30 text-[#2d6a4f] dark:text-[#52b788] text-xs font-bold">
-            <span className="text-sm">🌱</span>
-            <span>Active Bud</span>
+          <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold">
+            <span>🌱</span>
+            <span>Up Next</span>
           </div>
         );
       case 'locked':
         return (
-          <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-gray-100 dark:bg-[#13281f] border border-gray-200 dark:border-[#1e4d3a] text-gray-500 dark:text-gray-400 text-xs font-medium">
+          <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 text-xs font-medium">
             <Lock className="w-3 h-3" />
-            <span>Dormant Bud</span>
+            <span>Locked</span>
           </div>
         );
     }
@@ -145,54 +144,49 @@ export const RoadmapLatticeView: React.FC<RoadmapLatticeViewProps> = ({
     <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-8 animate-in fade-in duration-300">
       
       {/* Top Banner & View Switcher */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-3xl bg-white dark:bg-[#0c1e16] border border-[#bfc9c3]/50 dark:border-[#1e4d3a]/60 shadow-lg relative overflow-hidden">
-        {/* Subtle decorative background lattice accent */}
-        <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-10 lattice-bg pointer-events-none" />
-
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-md relative overflow-hidden">
         <div className="space-y-1.5 relative z-10">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#003527] dark:text-[#52b788] flex items-center gap-1">
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
               <TreeDeciduous className="w-3.5 h-3.5" />
-              <span>Living Lattice Roadmap</span>
+              <span>Personalized Learning Roadmap</span>
             </span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-[#003527]/10 dark:bg-[#52b788]/20 text-[#003527] dark:text-[#a7f3d0] font-bold">
-              {doneNodes} of {nodes.length} Bloomed
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-bold">
+              {doneNodes} of {nodes.length} Completed
             </span>
           </div>
-          <h1 className="font-literata text-2xl sm:text-3xl font-bold text-[#003527] dark:text-white">
-            Your Personal Architecture Canopy
+          <h1 className="font-literata text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">
+            Architecture Milestone Lattice
           </h1>
-          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 max-w-xl">
-            A plant growing up a trellis. Nodes bloom into flowers as you master concepts, branching along specialized architectural paths.
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-xl">
+            Adaptive progression path tailored to your radar assessment. Nodes unlock dynamically as prerequisites are mastered.
           </p>
         </div>
 
         {/* View Toggle Controls */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 relative z-10">
-          {/* Time budget badge */}
           <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 text-amber-800 dark:text-amber-300 text-xs font-semibold">
-            <Clock className="w-3.5 h-3.5 text-[#d97706]" />
+            <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
             <span>Budget: {totalWeeklyHours} hrs this week</span>
           </div>
 
-          {/* Full Path vs This Week Switcher */}
-          <div className="flex p-1 rounded-2xl bg-gray-100 dark:bg-[#07130e] border border-gray-200 dark:border-[#1e4d3a]">
+          <div className="flex p-1 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
             <button
               onClick={() => setViewFilter('full')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 viewFilter === 'full'
-                  ? 'bg-[#003527] dark:bg-[#52b788] text-white dark:text-[#06110d] shadow-sm'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900'
+                  ? 'bg-emerald-600 dark:bg-emerald-500 text-white dark:text-slate-950 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               Full Path
             </button>
             <button
               onClick={() => setViewFilter('this-week')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 viewFilter === 'this-week'
-                  ? 'bg-[#003527] dark:bg-[#52b788] text-white dark:text-[#06110d] shadow-sm'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900'
+                  ? 'bg-emerald-600 dark:bg-emerald-500 text-white dark:text-slate-950 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               This Week
@@ -201,51 +195,40 @@ export const RoadmapLatticeView: React.FC<RoadmapLatticeViewProps> = ({
         </div>
       </div>
 
-      {/* Stem Progress Bar for overall roadmap */}
-      <div className="p-4 rounded-2xl bg-white dark:bg-[#0c1e16] border border-[#bfc9c3]/50 dark:border-[#1e4d3a]/60 shadow-xs">
+      {/* Progress Bar Card */}
+      <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
         <StemProgressBar
           progress={overallProgress}
-          label="Overall Path Growth & Foliage Canopy"
-          height={14}
+          label="Overall Roadmap Trajectory Mastery"
+          height={12}
         />
       </div>
 
-      {/* ========================================================================= */}
-      {/* THE BRANCHING TRELLIS LATTICE NODES VIEW */}
-      {/* ========================================================================= */}
+      {/* ── The Nodes Lattice Tree View ── */}
       <div className="relative">
         
-        {/* Central Vertical SVG Vine Trunk connecting nodes on Desktop */}
+        {/* Central Vertical Stem connecting nodes */}
         <div className="hidden md:block absolute left-1/2 top-8 bottom-8 w-1 -translate-x-1/2 pointer-events-none z-0">
           <svg className="w-16 h-full -ml-8 overflow-visible" preserveAspectRatio="none">
-            {/* Wooden Trellis Cross-Slats in Background */}
-            <line x1="-80" y1="50" x2="140" y2="170" stroke="#7f4f24" strokeWidth="6" opacity="0.15" />
-            <line x1="140" y1="50" x2="-80" y2="170" stroke="#7f4f24" strokeWidth="6" opacity="0.15" />
-            <line x1="-80" y1="350" x2="140" y2="470" stroke="#7f4f24" strokeWidth="6" opacity="0.15" />
-            <line x1="140" y1="350" x2="-80" y2="470" stroke="#7f4f24" strokeWidth="6" opacity="0.15" />
-
-            {/* Living Organic Vine Line */}
             <path
               d="M 32 0 Q 20 150 44 300 T 24 600 T 40 900 T 32 1200"
               fill="none"
-              stroke="#2d6a4f"
-              strokeWidth="5"
-              strokeLinecap="round"
-              className="path-line"
+              stroke="currentColor"
+              className="text-slate-200 dark:text-slate-800"
+              strokeWidth="4"
             />
-            {/* Center stem vein */}
             <path
               d="M 32 0 Q 20 150 44 300 T 24 600 T 40 900 T 32 1200"
               fill="none"
-              stroke="#52b788"
+              stroke="currentColor"
+              className="text-emerald-500/60 dark:text-emerald-400/50"
               strokeWidth="2"
               strokeLinecap="round"
-              opacity="0.8"
             />
           </svg>
         </div>
 
-        {/* Nodes Grid / Alternating Tree Layout */}
+        {/* Nodes Grid Layout */}
         <div className="space-y-8 relative z-10">
           {filteredNodes.map((node, index) => {
             const isLeft = index % 2 === 0;
@@ -262,43 +245,36 @@ export const RoadmapLatticeView: React.FC<RoadmapLatticeViewProps> = ({
               >
                 {/* Node Card Box */}
                 <div
-                  className={`w-full md:w-[calc(50%-2rem)] p-6 rounded-3xl border transition-all duration-300 relative ${
+                  className={`w-full md:w-[calc(50%-2rem)] p-6 rounded-3xl border transition-all duration-200 relative ${
                     node.status === 'done'
-                      ? 'bg-gradient-to-br from-white to-amber-50/40 dark:from-[#0c1e16] dark:to-amber-950/20 border-[#f59e0b]/40 shadow-md'
+                      ? 'bg-white dark:bg-slate-900 border-amber-300 dark:border-amber-800/80 shadow-md ring-1 ring-amber-400/20'
                       : node.status === 'in-progress'
-                      ? 'bg-white dark:bg-[#0c1e16] border-[#52b788] shadow-xl ring-2 ring-[#52b788]/20'
+                      ? 'bg-white dark:bg-slate-900 border-emerald-500 dark:border-emerald-500 shadow-xl ring-2 ring-emerald-500/20'
                       : node.status === 'available'
-                      ? 'bg-white dark:bg-[#0c1e16] border-[#2d6a4f]/50 dark:border-[#52b788]/50 shadow-md hover:border-[#52b788]'
-                      : 'bg-gray-50/80 dark:bg-[#07130e]/60 border-gray-200 dark:border-[#1e4d3a]/40 opacity-70'
+                      ? 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 shadow-md hover:border-emerald-500'
+                      : 'bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800/80 opacity-70'
                   }`}
                 >
-                  {/* Subtle Wood / Leaf Flourish Corner Accent */}
-                  <div className="absolute top-3 right-3 opacity-30">
-                    <svg viewBox="0 0 24 24" className="w-5 h-5 text-[#2d6a4f] dark:text-[#52b788]">
-                      <path d="M12 2 C6 6, 4 14, 12 22 C20 14, 18 6, 12 2 Z" fill="currentColor" />
-                    </svg>
-                  </div>
-
-                  {/* Header Row: Type Icon & Botanical Status */}
+                  {/* Header Row: Type Icon & Status */}
                   <div className="flex items-center justify-between gap-2 mb-3">
                     {renderNodeTypeIcon(node.type)}
                     {renderBotanicalStatusBadge(node.status)}
                   </div>
 
                   {/* Node Title & Description */}
-                  <h3 className="font-literata text-lg font-bold text-[#003527] dark:text-white leading-snug mb-1.5">
+                  <h3 className="font-literata text-lg font-bold text-slate-900 dark:text-white leading-snug mb-1.5">
                     {node.title}
                   </h3>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed mb-4">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
                     {node.shortDescription}
                   </p>
 
-                  {/* Fork Specialization Selector (If Fork Point) */}
+                  {/* Fork Specialization Selector */}
                   {isFork && node.forkOptions && (
-                    <div className="mb-4 p-3 rounded-2xl bg-[#003527]/5 dark:bg-[#52b788]/10 border border-[#003527]/10 dark:border-[#52b788]/20 space-y-2">
-                      <div className="flex items-center gap-1.5 text-xs font-bold text-[#003527] dark:text-[#a7f3d0]">
-                        <GitFork className="w-3.5 h-3.5 text-[#d97706]" />
-                        <span>Trellis Specialization Fork (Choose Branch):</span>
+                    <div className="mb-4 p-3 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 space-y-2">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                        <GitFork className="w-3.5 h-3.5 text-amber-500" />
+                        <span>Specialization Branch:</span>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {node.forkOptions.map(opt => {
@@ -310,10 +286,10 @@ export const RoadmapLatticeView: React.FC<RoadmapLatticeViewProps> = ({
                                 setActiveForkBranch(opt.id);
                                 if (onSwitchBranch) onSwitchBranch(node.id, opt.id);
                               }}
-                              className={`p-2 rounded-xl text-left text-xs transition-all flex flex-col ${
+                              className={`p-2.5 rounded-xl text-left text-xs transition-all flex flex-col cursor-pointer ${
                                 isBranchSelected
-                                  ? 'bg-[#003527] text-white dark:bg-[#52b788] dark:text-[#06110d] font-bold shadow-xs'
-                                  : 'bg-white dark:bg-[#13281f] text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-[#1e4d3a] hover:bg-gray-50'
+                                  ? 'bg-emerald-600 text-white dark:bg-emerald-500 dark:text-slate-950 font-bold shadow-xs'
+                                  : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50'
                               }`}
                             >
                               <span>{opt.name}</span>
@@ -325,46 +301,44 @@ export const RoadmapLatticeView: React.FC<RoadmapLatticeViewProps> = ({
                     </div>
                   )}
 
-                  {/* Stem Progress for this Node */}
+                  {/* Progress bar */}
                   {!isLocked && (
                     <div className="mb-4">
                       <StemProgressBar
                         progress={node.progress}
-                        height={8}
+                        height={7}
                         showLeaves={false}
-                        label="Module Mastery Progress"
+                        label="Module Progress"
                       />
                     </div>
                   )}
 
-                  {/* Footer Row: Action Button + "Why this?" + Feedback Controls */}
-                  <div className="pt-3 border-t border-gray-100 dark:border-[#1e4d3a]/60 flex flex-wrap items-center justify-between gap-2">
-                    
-                    {/* Primary Action Button */}
+                  {/* Footer Action & Feedback */}
+                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
                     <button
                       onClick={() => handleBloomCelebration(node)}
                       disabled={isLocked}
-                      className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${
+                      className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer ${
                         isLocked
-                          ? 'bg-gray-200 dark:bg-[#13281f] text-gray-400 cursor-not-allowed'
+                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
                           : node.status === 'done'
-                          ? 'bg-[#f59e0b] hover:bg-[#d97706] text-white shadow-sm'
-                          : 'bg-[#003527] hover:bg-[#084e3a] dark:bg-[#52b788] dark:hover:bg-[#40916c] text-white dark:text-[#06110d] shadow-md'
+                          ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-xs'
+                          : 'bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white dark:text-slate-950 shadow-xs'
                       }`}
                     >
                       {node.status === 'done' ? (
                         <>
-                          <span>Review Sandbox</span>
+                          <span>Review Module</span>
                           <CheckCircle2 className="w-3.5 h-3.5" />
                         </>
                       ) : node.status === 'in-progress' ? (
                         <>
-                          <span>Continue Growth</span>
+                          <span>Continue Module</span>
                           <Play className="w-3.5 h-3.5" />
                         </>
                       ) : isLocked ? (
                         <>
-                          <span>Prerequisites Locked</span>
+                          <span>Locked</span>
                           <Lock className="w-3.5 h-3.5" />
                         </>
                       ) : (
@@ -375,48 +349,44 @@ export const RoadmapLatticeView: React.FC<RoadmapLatticeViewProps> = ({
                       )}
                     </button>
 
-                    {/* "Why this?" Button & Feedback Controls */}
                     <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => onOpenWhyThis(node)}
-                        className="px-2.5 py-1.5 rounded-lg border border-[#003527]/20 dark:border-[#52b788]/30 hover:bg-[#003527]/5 dark:hover:bg-[#52b788]/10 text-[#003527] dark:text-[#a7f3d0] text-xs font-semibold transition-all flex items-center gap-1"
+                        className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer"
                         title="View AI recommendation rationale"
                       >
-                        <HelpCircle className="w-3.5 h-3.5 text-[#d97706]" />
+                        <HelpCircle className="w-3.5 h-3.5 text-amber-500" />
                         <span>Why this?</span>
                       </button>
 
-                      {/* 👍 Feedback */}
                       <button
                         onClick={() => handleFeedback(node.id, 'up')}
-                        className={`p-1.5 rounded-lg border transition-all ${
+                        className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
                           node.feedback === 'up'
-                            ? 'bg-[#003527] text-white dark:bg-[#52b788] dark:text-[#06110d]'
-                            : 'border-gray-200 dark:border-[#1e4d3a] text-gray-500 hover:bg-gray-100 dark:hover:bg-[#13281f]'
+                            ? 'bg-emerald-600 text-white dark:bg-emerald-500 dark:text-slate-950'
+                            : 'border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'
                         }`}
                         title="Prioritize similar modules"
                       >
                         <ThumbsUp className="w-3.5 h-3.5" />
                       </button>
 
-                      {/* 👎 Feedback */}
                       <button
                         onClick={() => handleFeedback(node.id, 'down')}
-                        className={`p-1.5 rounded-lg border transition-all ${
+                        className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
                           node.feedback === 'down'
-                            ? 'bg-red-600 text-white'
-                            : 'border-gray-200 dark:border-[#1e4d3a] text-gray-500 hover:bg-gray-100 dark:hover:bg-[#13281f]'
+                            ? 'bg-rose-600 text-white'
+                            : 'border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'
                         }`}
                         title="De-emphasize this topic"
                       >
                         <ThumbsDown className="w-3.5 h-3.5" />
                       </button>
 
-                      {/* 🔁 Regenerate with AI */}
                       <button
                         onClick={() => handleFeedback(node.id, 'regen')}
                         disabled={isRegenerating}
-                        className={`p-1.5 rounded-lg border border-[#f59e0b]/40 text-[#d97706] hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-all ${
+                        className={`p-1.5 rounded-lg border border-amber-300 dark:border-amber-700 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-all cursor-pointer ${
                           isRegenerating ? 'animate-spin' : ''
                         }`}
                         title="Regenerate this step using AI"
@@ -427,29 +397,29 @@ export const RoadmapLatticeView: React.FC<RoadmapLatticeViewProps> = ({
                   </div>
 
                   {isRegenerating && (
-                    <div className="mt-2 text-[11px] text-[#d97706] font-semibold animate-pulse flex items-center gap-1">
+                    <div className="mt-2 text-[11px] text-amber-600 dark:text-amber-400 font-semibold animate-pulse flex items-center gap-1">
                       <Sparkles className="w-3 h-3" />
                       <span>Recalibrating node with Trellis AI...</span>
                     </div>
                   )}
                 </div>
 
-                {/* Center Node Sprout Marker (Desktop) */}
-                <div className="hidden md:flex items-center justify-center w-12 h-12 rounded-full border-4 border-white dark:border-[#06110d] shadow-lg z-20 transition-transform hover:scale-110">
+                {/* Center Node Marker (Desktop) */}
+                <div className="hidden md:flex items-center justify-center w-11 h-11 rounded-full border-4 border-white dark:border-slate-950 shadow-md z-20">
                   {node.status === 'done' ? (
-                    <div className="w-full h-full rounded-full bg-gradient-to-tr from-[#f59e0b] to-[#fbbf24] flex items-center justify-center text-white text-lg">
+                    <div className="w-full h-full rounded-full bg-amber-500 flex items-center justify-center text-white text-base">
                       🌸
                     </div>
                   ) : node.status === 'in-progress' ? (
-                    <div className="w-full h-full rounded-full bg-[#52b788] flex items-center justify-center text-white text-lg animate-pulse">
+                    <div className="w-full h-full rounded-full bg-emerald-500 flex items-center justify-center text-white text-base animate-pulse">
                       🍃
                     </div>
                   ) : node.status === 'available' ? (
-                    <div className="w-full h-full rounded-full bg-[#2d6a4f] flex items-center justify-center text-white text-base">
+                    <div className="w-full h-full rounded-full bg-emerald-700 flex items-center justify-center text-white text-sm">
                       🌱
                     </div>
                   ) : (
-                    <div className="w-full h-full rounded-full bg-gray-400 dark:bg-[#1e4d3a] flex items-center justify-center text-white text-xs">
+                    <div className="w-full h-full rounded-full bg-slate-300 dark:bg-slate-700 flex items-center justify-center text-slate-500 text-xs">
                       🔒
                     </div>
                   )}

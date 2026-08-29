@@ -3,214 +3,185 @@ import { TrellisLogo } from './TrellisLogo';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import {
-  Sparkles,
-  Layers,
-  Trees,
   Sun,
   Moon,
-  User,
-  MessageSquare,
   Compass,
   BookOpen,
   Brain,
-  LogIn
+  MessageSquare,
+  LogIn,
+  LogOut,
+  Sparkles,
+  User
 } from 'lucide-react';
+import GooeyNav from './GooeyNav';
 
 export type ActiveTab = 'landing' | 'roadmap' | 'resources' | 'practice' | 'chat' | 'profile' | 'auth' | 'onboarding';
 
 interface HeaderProps {
   currentTab: ActiveTab;
   onSelectTab: (tab: ActiveTab) => void;
-  shaderActive: boolean;
-  onToggleShader: () => void;
+  onOpenAuthModal?: (mode: 'login' | 'register') => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   currentTab,
-  onSelectTab,
-  shaderActive,
-  onToggleShader
+  onSelectTab
 }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const { isDarkMode, toggleTheme } = useTheme();
 
+  const isLanding = currentTab === 'landing' || currentTab === 'auth' || currentTab === 'onboarding' || !isAuthenticated || !user?.onboarded;
+
   return (
-    <header className="fixed top-0 w-full z-40 bg-[#f8f9ff]/85 dark:bg-[#06110d]/90 backdrop-blur-xl border-b border-[#bfc9c3]/30 dark:border-[#1e4d3a]/60 shadow-[0_10px_30px_rgba(0,53,39,0.04)] transition-all duration-300">
-      <div className="max-w-[1280px] mx-auto px-4 md:px-8 py-3 flex justify-between items-center">
+    <header className="fixed top-0 w-full z-40 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80 shadow-xs transition-colors duration-200">
+      <div className="max-w-[1280px] mx-auto px-4 md:px-8 py-3.5 flex justify-between items-center">
         
-        {/* Left Brand & Desktop Navigation */}
-        <div className="flex items-center gap-6 lg:gap-8">
+        {/* Brand Logo */}
+        <div className="flex items-center gap-8">
           <TrellisLogo
             size="md"
-            onClick={() => onSelectTab('landing')}
-            className="hover:scale-102 transition-transform cursor-pointer"
+            onClick={() => onSelectTab(isAuthenticated ? 'roadmap' : 'landing')}
+            className="hover:opacity-90 transition-opacity cursor-pointer"
           />
 
-          {/* Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center gap-1.5 lg:gap-3">
-            <button
-              onClick={() => onSelectTab('landing')}
-              className={`text-xs lg:text-sm font-bold px-3 py-1.5 rounded-xl transition-all ${
-                currentTab === 'landing'
-                  ? 'bg-[#003527] dark:bg-[#52b788] text-white dark:text-[#06110d] shadow-xs'
-                  : 'text-gray-700 dark:text-gray-300 hover:text-[#003527] dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#13281f]'
-              }`}
-            >
-              Overview
-            </button>
-
-            <button
-              onClick={() => onSelectTab('roadmap')}
-              className={`text-xs lg:text-sm font-bold px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${
-                currentTab === 'roadmap'
-                  ? 'bg-[#003527] dark:bg-[#52b788] text-white dark:text-[#06110d] shadow-xs'
-                  : 'text-gray-700 dark:text-gray-300 hover:text-[#003527] dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#13281f]'
-              }`}
-            >
-              <Compass className="w-3.5 h-3.5" />
-              <span>Roadmap</span>
-            </button>
-
-            <button
-              onClick={() => onSelectTab('resources')}
-              className={`text-xs lg:text-sm font-bold px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${
-                currentTab === 'resources'
-                  ? 'bg-[#003527] dark:bg-[#52b788] text-white dark:text-[#06110d] shadow-xs'
-                  : 'text-gray-700 dark:text-gray-300 hover:text-[#003527] dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#13281f]'
-              }`}
-            >
-              <BookOpen className="w-3.5 h-3.5" />
-              <span>Resources</span>
-            </button>
-
-            <button
-              onClick={() => onSelectTab('practice')}
-              className={`text-xs lg:text-sm font-bold px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${
-                currentTab === 'practice'
-                  ? 'bg-[#003527] dark:bg-[#52b788] text-white dark:text-[#06110d] shadow-xs'
-                  : 'text-gray-700 dark:text-gray-300 hover:text-[#003527] dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#13281f]'
-              }`}
-            >
-              <Brain className="w-3.5 h-3.5" />
-              <span>Skill-Check</span>
-            </button>
-
-            <button
-              onClick={() => onSelectTab('chat')}
-              className={`text-xs lg:text-sm font-bold px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${
-                currentTab === 'chat'
-                  ? 'bg-[#003527] dark:bg-[#52b788] text-white dark:text-[#06110d] shadow-xs'
-                  : 'text-gray-700 dark:text-gray-300 hover:text-[#003527] dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#13281f]'
-              }`}
-            >
-              <MessageSquare className="w-3.5 h-3.5" />
-              <span>AI Guide</span>
-            </button>
-          </nav>
+          {/* SaaS Navigation Links (ONLY SHOWN FOR AUTHENTICATED PLATFORM USERS) */}
+          {!isLanding && (
+            <div className="hidden md:block">
+              <GooeyNav
+                items={[
+                  { label: 'Roadmap', icon: <Compass className="w-3.5 h-3.5" />, onClick: () => onSelectTab('roadmap') },
+                  { label: 'Resources', icon: <BookOpen className="w-3.5 h-3.5" />, onClick: () => onSelectTab('resources') },
+                  { label: 'Skill-Check', icon: <Brain className="w-3.5 h-3.5" />, onClick: () => onSelectTab('practice') },
+                  { label: 'AI Guide', icon: <MessageSquare className="w-3.5 h-3.5" />, onClick: () => onSelectTab('chat') }
+                ]}
+                activeIndex={['roadmap', 'resources', 'practice', 'chat'].indexOf(currentTab) >= 0 ? ['roadmap', 'resources', 'practice', 'chat'].indexOf(currentTab) : 0}
+              />
+            </div>
+          )}
         </div>
 
         {/* Right Controls */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3">
           
-          {/* Theme Switcher Button */}
+          {/* Theme Toggle Button */}
           <button
             onClick={toggleTheme}
-            title={isDarkMode ? 'Switch to Sunlit Garden' : 'Switch to Greenhouse at Night'}
-            className="p-2 rounded-xl border border-gray-200 dark:border-[#1e4d3a] bg-white dark:bg-[#0c1e16] text-gray-700 dark:text-[#a7f3d0] hover:bg-gray-100 dark:hover:bg-[#13281f] transition-all"
+            title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
-            {isDarkMode ? <Sun className="w-4 h-4 text-[#fbbf24]" /> : <Moon className="w-4 h-4 text-[#003527]" />}
+            {isDarkMode ? (
+              <Sun className="w-4 h-4 text-amber-400" />
+            ) : (
+              <Moon className="w-4 h-4 text-slate-700" />
+            )}
           </button>
 
-          {/* Living Trellis Background Animation Toggle (Landing Page Only) */}
-          {currentTab === 'landing' && (
-            <button
-              onClick={onToggleShader}
-              title={shaderActive ? 'Hide Living Trellis Vines' : 'Show Living Trellis Vines'}
-              className={`p-2 rounded-xl border transition-all text-xs flex items-center gap-1.5 ${
-                shaderActive
-                  ? 'bg-[#003527] text-white border-[#003527] dark:bg-[#52b788] dark:text-[#06110d]'
-                  : 'bg-white dark:bg-[#0c1e16] text-gray-600 dark:text-gray-300 border-gray-200 dark:border-[#1e4d3a] hover:bg-gray-100'
-              }`}
-            >
-              <Trees className="w-3.5 h-3.5" />
-              <span className="hidden lg:inline text-[11px] font-semibold">
-                {shaderActive ? 'Garden Active' : 'Garden Hidden'}
-              </span>
-            </button>
-          )}
+          {/* Landing Mode: Sign In + Get Started */}
+          {isLanding ? (
+            <div className="flex items-center gap-2.5">
+              <button
+                onClick={() => onSelectTab('auth')}
+                className="text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white px-3.5 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                Sign In
+              </button>
 
-          {/* User Profile or Auth Button */}
-          {isAuthenticated ? (
-            <button
-              onClick={() => onSelectTab('profile')}
-              className={`p-1.5 pl-3 pr-2.5 rounded-full border transition-all flex items-center gap-2 text-xs font-bold ${
-                currentTab === 'profile'
-                  ? 'border-[#003527] dark:border-[#52b788] bg-[#003527]/10 dark:bg-[#52b788]/20 text-[#003527] dark:text-white'
-                  : 'border-gray-200 dark:border-[#1e4d3a] bg-white dark:bg-[#0c1e16] text-gray-700 dark:text-gray-200 hover:border-[#003527]'
-              }`}
-            >
-              <span className="hidden sm:inline font-literata truncate max-w-[110px]">
-                {user?.name || 'Architect'}
-              </span>
-              <span className="w-6 h-6 rounded-full bg-[#003527] text-white flex items-center justify-center text-xs">
-                {user?.avatar || '🌿'}
-              </span>
-            </button>
+              <button
+                onClick={() => onSelectTab('auth')}
+                className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white dark:text-slate-950 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Get Started</span>
+              </button>
+            </div>
           ) : (
-            <button
-              onClick={() => onSelectTab('auth')}
-              className="bg-[#003527] hover:bg-[#084e3a] dark:bg-[#52b788] dark:hover:bg-[#40916c] text-white dark:text-[#06110d] px-4 py-2 rounded-full text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
-            >
-              <LogIn className="w-3.5 h-3.5" />
-              <span>Sign In</span>
-            </button>
+            /* Authenticated Mode: Profile + Sign Out */
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => onSelectTab('profile')}
+                className={`p-1.5 pl-3 pr-2.5 rounded-full border transition-all flex items-center gap-2 text-xs font-bold cursor-pointer ${
+                  currentTab === 'profile'
+                    ? 'border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                    : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:border-slate-300'
+                }`}
+              >
+                <span className="hidden sm:inline font-medium truncate max-w-[110px]">
+                  {user?.name || 'Learner'}
+                </span>
+                <div className="w-6 h-6 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center">
+                  {user?.avatar && user.avatar.startsWith('/') ? (
+                    <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
+                  )}
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  logout();
+                  onSelectTab('landing');
+                }}
+                title="Sign Out"
+                className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
           )}
         </div>
       </div>
 
-      {/* Mobile Sticky Tab Bar */}
-      <div className="md:hidden flex border-t border-[#bfc9c3]/30 dark:border-[#1e4d3a]/60 bg-white/95 dark:bg-[#0c1e16]/95 px-2 py-1.5 justify-around text-[11px] font-bold">
-        <button
-          onClick={() => onSelectTab('landing')}
-          className={`px-2 py-1 rounded-lg ${
-            currentTab === 'landing' ? 'bg-[#003527] text-white dark:bg-[#52b788] dark:text-[#06110d]' : 'text-gray-600 dark:text-gray-400'
-          }`}
-        >
-          Overview
-        </button>
-        <button
-          onClick={() => onSelectTab('roadmap')}
-          className={`px-2 py-1 rounded-lg ${
-            currentTab === 'roadmap' ? 'bg-[#003527] text-white dark:bg-[#52b788] dark:text-[#06110d]' : 'text-gray-600 dark:text-gray-400'
-          }`}
-        >
-          Roadmap
-        </button>
-        <button
-          onClick={() => onSelectTab('resources')}
-          className={`px-2 py-1 rounded-lg ${
-            currentTab === 'resources' ? 'bg-[#003527] text-white dark:bg-[#52b788] dark:text-[#06110d]' : 'text-gray-600 dark:text-gray-400'
-          }`}
-        >
-          Resources
-        </button>
-        <button
-          onClick={() => onSelectTab('practice')}
-          className={`px-2 py-1 rounded-lg ${
-            currentTab === 'practice' ? 'bg-[#003527] text-white dark:bg-[#52b788] dark:text-[#06110d]' : 'text-gray-600 dark:text-gray-400'
-          }`}
-        >
-          Practice
-        </button>
-        <button
-          onClick={() => onSelectTab('chat')}
-          className={`px-2 py-1 rounded-lg ${
-            currentTab === 'chat' ? 'bg-[#003527] text-white dark:bg-[#52b788] dark:text-[#06110d]' : 'text-gray-600 dark:text-gray-400'
-          }`}
-        >
-          AI Guide
-        </button>
-      </div>
+      {/* Mobile Bottom Tab Bar (ONLY SHOWN FOR AUTHENTICATED USERS, NEVER ON LANDING) */}
+      {!isLanding && (
+        <div className="md:hidden flex border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-950/95 px-3 py-2 justify-around text-xs font-medium">
+          <button
+            onClick={() => onSelectTab('roadmap')}
+            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 ${
+              currentTab === 'roadmap'
+                ? 'bg-emerald-600 text-white dark:bg-emerald-500 dark:text-slate-950 font-bold'
+                : 'text-slate-600 dark:text-slate-400'
+            }`}
+          >
+            <Compass className="w-3.5 h-3.5" />
+            <span>Roadmap</span>
+          </button>
+          <button
+            onClick={() => onSelectTab('resources')}
+            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 ${
+              currentTab === 'resources'
+                ? 'bg-emerald-600 text-white dark:bg-emerald-500 dark:text-slate-950 font-bold'
+                : 'text-slate-600 dark:text-slate-400'
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>Resources</span>
+          </button>
+          <button
+            onClick={() => onSelectTab('practice')}
+            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 ${
+              currentTab === 'practice'
+                ? 'bg-emerald-600 text-white dark:bg-emerald-500 dark:text-slate-950 font-bold'
+                : 'text-slate-600 dark:text-slate-400'
+            }`}
+          >
+            <Brain className="w-3.5 h-3.5" />
+            <span>Skill-Check</span>
+          </button>
+          <button
+            onClick={() => onSelectTab('chat')}
+            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 ${
+              currentTab === 'chat'
+                ? 'bg-emerald-600 text-white dark:bg-emerald-500 dark:text-slate-950 font-bold'
+                : 'text-slate-600 dark:text-slate-400'
+            }`}
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            <span>AI Guide</span>
+          </button>
+        </div>
+      )}
     </header>
   );
 };

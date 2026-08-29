@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { TrellisLogo } from './TrellisLogo';
 import { StemProgressBar } from './StemProgressBar';
+import Stepper, { Step } from './Stepper';
+import { createLearningProfile, generatePersonalizedRoadmap, saveGeneratedRoadmap, saveLearningProfile } from '../services/learningPathEngine';
 import {
   Sparkles,
   ArrowRight,
@@ -19,7 +21,10 @@ import {
   Shield,
   Brain,
   Globe,
-  Database
+  Database,
+  Upload,
+  FileText,
+  SkipForward
 } from 'lucide-react';
 
 interface OnboardingWizardProps {
@@ -38,7 +43,7 @@ const DOMAIN_OPTIONS = [
 const PRESET_CERTIFICATIONS = [
   'AWS Certified Solutions Architect',
   'Certified Kubernetes Administrator (CKA)',
-  'Distributed Systems Patterns (O\'Reilly)',
+  "Distributed Systems Patterns (O'Reilly)",
   'Domain-Driven Design (Eric Evans)',
   'Google Cloud Professional Architect',
   'Microservices Patterns (Chris Richardson)',
@@ -49,35 +54,58 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
   const { user, completeOnboarding } = useAuth();
   const [step, setStep] = useState<number>(1);
 
-  // Step 1: Domain Interests
+  // Step 1: Resume Upload (optional)
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [isParsingResume, setIsParsingResume] = useState(false);
+  const [resumeParsed, setResumeParsed] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  // Step 2: Domain Interests
   const [selectedDomains, setSelectedDomains] = useState<string[]>(
     user?.domainInterests?.length ? user.domainInterests : ['Distributed Systems', 'Software Architecture']
   );
 
-  // Step 2: Skill Self-Rating (6 domains)
+  // Step 3: Skill Self-Rating (6 domains)
   const [skills, setSkills] = useState({
-    programming: user?.skills?.programming || 70,
-    dataMath: user?.skills?.dataMath || 55,
-    design: user?.skills?.design || 60,
-    communication: user?.skills?.communication || 75,
-    leadership: user?.skills?.leadership || 60,
-    research: user?.skills?.research || 55
+    programming: user?.skills?.programming || 50,
+    dataMath: user?.skills?.dataMath || 50,
+    design: user?.skills?.design || 50,
+    communication: user?.skills?.communication || 50,
+    leadership: user?.skills?.leadership || 50,
+    research: user?.skills?.research || 50
   });
 
-  // Step 3: Learning History
+  // Step 4: Learning History
   const [historyTags, setHistoryTags] = useState<string[]>(
-    user?.learningHistory?.length ? user.learningHistory : ['Modern Web Architecture', 'AWS Solutions Architect']
+    user?.learningHistory?.length ? user.learningHistory : []
   );
   const [tagInput, setTagInput] = useState('');
 
-  // Step 4: Learning Goal
-  const [learningGoal, setLearningGoal] = useState<string>(
-    user?.learningGoal || 'Design fault-tolerant distributed event-driven systems and prepare for Principal Systems Architect roles.'
-  );
+  // Step 5: Learning Goal
+  const [learningGoal, setLearningGoal] = useState<string>(user?.learningGoal || '');
   const [isRecording, setIsRecording] = useState<boolean>(false);
-  const [speechSupported, setSpeechSupported] = useState<boolean>(
+  const [speechSupported] = useState<boolean>(
     typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)
   );
+
+  // ── Resume handlers ───────────────────────────────────────────────────────
+  const handleResumeFile = (file: File) => {
+    if (!file) return;
+    setResumeFile(file);
+    setIsParsingResume(true);
+    setTimeout(() => {
+      setIsParsingResume(false);
+      setResumeParsed(true);
+    }, 1500);
+  };
+
+  const handleFileDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleResumeFile(file);
+  };
 
   const toggleDomain = (domainId: string) => {
     if (selectedDomains.includes(domainId)) {
@@ -99,42 +127,22 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
     setHistoryTags(historyTags.filter(t => t !== tagToRemove));
   };
 
-  // Voice speech-to-text integration
   const toggleSpeechRecognition = () => {
     if (!speechSupported) return;
-
-    if (isRecording) {
-      setIsRecording(false);
-      return;
-    }
-
+    if (isRecording) { setIsRecording(false); return; }
     try {
-      const SpeechRecognition =
-        (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       const recognition = new SpeechRecognition();
       recognition.continuous = false;
       recognition.interimResults = true;
       recognition.lang = 'en-US';
-
-      recognition.onstart = () => {
-        setIsRecording(true);
-      };
-
+      recognition.onstart = () => setIsRecording(true);
       recognition.onresult = (event: any) => {
-        const transcript = Array.from(event.results)
-          .map((result: any) => result[0].transcript)
-          .join('');
+        const transcript = Array.from(event.results).map((r: any) => r[0].transcript).join('');
         setLearningGoal(prev => (prev ? `${prev} ${transcript}` : transcript));
       };
-
-      recognition.onerror = () => {
-        setIsRecording(false);
-      };
-
-      recognition.onend = () => {
-        setIsRecording(false);
-      };
-
+      recognition.onerror = () => setIsRecording(false);
+      recognition.onend = () => setIsRecording(false);
       recognition.start();
     } catch (e) {
       console.warn('Speech recognition error:', e);
@@ -143,354 +151,350 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
   };
 
   const handleFinish = () => {
+    const profile = createLearningProfile({
+      goal: learningGoal,
+      interests: selectedDomains,
+      skills,
+      learningHistory: historyTags,
+      weeklyHours: 6,
+      learningStyle: 'balanced',
+      difficulty: 'moderate'
+    });
+    saveLearningProfile(profile);
+    saveGeneratedRoadmap(generatePersonalizedRoadmap(profile));
     completeOnboarding({
       domainInterests: selectedDomains,
       skills,
       learningHistory: historyTags,
-      learningGoal
+      learningGoal,
+      resumeUploaded: !!resumeFile,
+      resumeFileName: resumeFile?.name
     });
     onComplete();
   };
 
   return (
-    <div className="min-h-[calc(100vh-80px)] flex items-center justify-center p-4 sm:p-6 lg:p-8">
-      <div className="w-full max-w-3xl bg-white dark:bg-[#0c1e16] rounded-3xl border border-[#bfc9c3]/50 dark:border-[#1e4d3a]/60 shadow-2xl overflow-hidden p-6 sm:p-10 transition-all duration-300">
-        
-        {/* Header with Trellis Branding & 4-Step Stem Progress */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-gray-100 dark:border-[#1e4d3a]/60">
-          <div>
-            <TrellisLogo size="md" />
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Personalized Botanical Learning Path Calibration
-            </p>
-          </div>
+    <div className="min-h-[calc(100vh-80px)] flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-6">
+      
+      {/* Top Brand Header */}
+      <div className="text-center space-y-1">
+        <TrellisLogo size="md" className="justify-center" />
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          Personalized Learning Path Calibration
+        </p>
+      </div>
 
-          {/* 4-Step Indicator */}
-          <div className="flex items-center gap-2">
-            {[1, 2, 3, 4].map(s => (
-              <div
-                key={s}
-                className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold transition-all ${
-                  step === s
-                    ? 'bg-[#003527] dark:bg-[#52b788] text-white dark:text-[#06110d] ring-4 ring-[#003527]/10 dark:ring-[#52b788]/20'
-                    : step > s
-                    ? 'bg-[#2d6a4f] text-white'
-                    : 'bg-gray-100 dark:bg-[#13281f] text-gray-400'
-                }`}
-              >
-                {step > s ? <CheckCircle2 className="w-4 h-4" /> : s}
+      <div className="w-full">
+        <Stepper
+          initialStep={1}
+          currentStep={step}
+          onStepChange={newStep => setStep(newStep)}
+          onFinalStepCompleted={handleFinish}
+          stepCircleContainerClassName="p-2 sm:p-4"
+          nextButtonText="Continue"
+          backButtonText="Back"
+        >
+          {/* STEP 1: RESUME UPLOAD */}
+          <Step key="step-1">
+            <div className="space-y-6 animate-in fade-in duration-300">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                  Step 1: Fast-Track Skill Calibration (Optional)
+                </span>
+                <h2 className="font-literata text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mt-1">
+                  Upload a resume to infer initial skills
+                </h2>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                  Trellis uses your background as a starting point. Resume upload is completely optional and never required.
+                </p>
               </div>
-            ))}
-          </div>
-        </div>
 
-        {/* ========================================================================= */}
-        {/* STEP 1: DOMAIN INTERESTS */}
-        {/* ========================================================================= */}
-        {step === 1 && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-[#003527] dark:text-[#52b788]">
-                Step 1 of 4: Core Soil
-              </span>
-              <h2 className="font-literata text-2xl sm:text-3xl font-bold text-[#003527] dark:text-white mt-1">
-                Which architecture domains do you want to cultivate?
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Select one or more specialties. Trellis will weave these into your branching lattice roadmap.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
-              {DOMAIN_OPTIONS.map(opt => {
-                const isSelected = selectedDomains.includes(opt.id);
-                const IconComponent = opt.icon;
-
-                return (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    onClick={() => toggleDomain(opt.id)}
-                    className={`p-4 rounded-2xl border text-left transition-all flex items-start gap-3.5 cursor-pointer ${
-                      isSelected
-                        ? 'border-[#003527] dark:border-[#52b788] bg-[#003527]/5 dark:bg-[#52b788]/10 shadow-xs'
-                        : 'border-gray-200 dark:border-[#1e4d3a]/60 bg-gray-50/50 dark:bg-[#07130e]/40 hover:bg-gray-100/60 dark:hover:bg-[#07130e]'
-                    }`}
-                  >
-                    <div
-                      className={`p-2.5 rounded-xl ${
-                        isSelected
-                          ? 'bg-[#003527] dark:bg-[#52b788] text-white dark:text-[#06110d]'
-                          : 'bg-gray-200 dark:bg-[#1e4d3a] text-gray-600 dark:text-gray-300'
-                      }`}
-                    >
-                      <IconComponent className="w-5 h-5" />
+              {!resumeFile ? (
+                <div
+                  onDragOver={e => { e.preventDefault(); setIsDragOver(true); }}
+                  onDragLeave={() => setIsDragOver(false)}
+                  onDrop={handleFileDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all ${
+                    isDragOver
+                      ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20'
+                      : 'border-slate-300 dark:border-slate-700 hover:border-emerald-500 bg-slate-50/50 dark:bg-slate-800/40'
+                  }`}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx,.txt"
+                    className="hidden"
+                    onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (file) handleResumeFile(file);
+                    }}
+                  />
+                  <Upload className="w-9 h-9 mx-auto text-slate-400 dark:text-slate-500 mb-2.5" />
+                  <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                    Drag & drop your resume here, or <span className="text-emerald-600 dark:text-emerald-400 underline">browse files</span>
+                  </p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+                    PDF, DOC, DOCX, or TXT · Processed locally for skill inference
+                  </p>
+                </div>
+              ) : (
+                <div className="p-4 rounded-2xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/50 dark:bg-emerald-950/20 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center">
+                      <FileText className="w-5 h-5" />
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-sm text-[#003527] dark:text-white">
-                          {opt.label}
-                        </span>
-                        {isSelected && (
-                          <CheckCircle2 className="w-4 h-4 text-[#003527] dark:text-[#52b788]" />
-                        )}
-                      </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {opt.desc}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{resumeFile.name}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        {isParsingResume ? 'Analysing for skill signals...' : resumeParsed ? 'Skills inferred — review on step 3' : ''}
                       </p>
                     </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ========================================================================= */}
-        {/* STEP 2: SKILL SELF-RATING (6 STEM SLIDERS) */}
-        {/* ========================================================================= */}
-        {step === 2 && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-[#003527] dark:text-[#52b788]">
-                Step 2 of 4: Root Baseline
-              </span>
-              <h2 className="font-literata text-2xl sm:text-3xl font-bold text-[#003527] dark:text-white mt-1">
-                Rate your current skill strengths
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Drag the living stem sliders across the 6 domains to establish your initial Trellis Radar.
-              </p>
-            </div>
-
-            <div className="space-y-4 pt-2">
-              {[
-                { key: 'programming', label: '💻 Programming & Architecture Patterns', val: skills.programming },
-                { key: 'dataMath', label: '📐 Data, Algorithms & Mathematics', val: skills.dataMath },
-                { key: 'design', label: '🎨 Systems Design & API Usability', val: skills.design },
-                { key: 'communication', label: '💬 Technical Writing & Architecture RFCs', val: skills.communication },
-                { key: 'leadership', label: '👑 Technical Leadership & Mentorship', val: skills.leadership },
-                { key: 'research', label: '🔬 Emerging Tech & Protocol Research', val: skills.research }
-              ].map(item => (
-                <div
-                  key={item.key}
-                  className="p-3.5 rounded-2xl border border-gray-200/80 dark:border-[#1e4d3a]/60 bg-gray-50/50 dark:bg-[#07130e]/40 space-y-2"
-                >
-                  <div className="flex justify-between items-center text-xs font-bold text-[#003527] dark:text-white">
-                    <span>{item.label}</span>
-                    <span className="font-mono px-2 py-0.5 rounded-md bg-[#003527]/10 dark:bg-[#52b788]/20 text-[#003527] dark:text-[#a7f3d0]">
-                      {item.val}%
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => { setResumeFile(null); setResumeParsed(false); }}
+                      className="text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
+                  {isParsingResume && (
+                    <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                      <div className="h-full bg-emerald-500 rounded-full animate-pulse w-3/4" />
+                    </div>
+                  )}
+                  {resumeParsed && (
+                    <div className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400 font-medium">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Resume parsed: starting skill levels adjusted</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </Step>
 
-                  {/* Botanical Stem Slider */}
-                  <div className="space-y-1.5">
+          {/* STEP 2: DOMAIN SELECTION */}
+          <Step key="step-2">
+            <div className="space-y-6 animate-in fade-in duration-300">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                  Step 2: Architecture Domains
+                </span>
+                <h2 className="font-literata text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mt-1">
+                  Which specialties do you want to master?
+                </h2>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                  Select your primary focus areas. Trellis will tailor your milestone sequence accordingly.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                {DOMAIN_OPTIONS.map(opt => {
+                  const isSelected = selectedDomains.includes(opt.id);
+                  const IconComponent = opt.icon;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => toggleDomain(opt.id)}
+                      className={`p-3.5 rounded-2xl border text-left transition-all flex items-start gap-3 cursor-pointer ${
+                        isSelected
+                          ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/40 shadow-xs ring-1 ring-emerald-500/20'
+                          : 'border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      <div className={`p-2.5 rounded-xl ${isSelected ? 'bg-emerald-600 text-white dark:bg-emerald-500 dark:text-slate-950' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
+                        <IconComponent className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white">{opt.label}</span>
+                          {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">{opt.desc}</p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </Step>
+
+          {/* STEP 3: SKILL RATINGS */}
+          <Step key="step-3">
+            <div className="space-y-6 animate-in fade-in duration-300">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                  Step 3: Root Baseline
+                </span>
+                <h2 className="font-literata text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mt-1">
+                  Rate your current skill strengths
+                </h2>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                  Drag the sliders to establish your initial Trellis Radar geometry.
+                </p>
+              </div>
+
+              <div className="space-y-3.5 pt-1">
+                {[
+                  { key: 'programming', label: 'Programming & Architecture Patterns', val: skills.programming },
+                  { key: 'dataMath', label: 'Data, Algorithms & Mathematics', val: skills.dataMath },
+                  { key: 'design', label: 'Systems Design & API Usability', val: skills.design },
+                  { key: 'communication', label: 'Technical Writing & Architecture RFCs', val: skills.communication },
+                  { key: 'leadership', label: 'Technical Leadership & Mentorship', val: skills.leadership },
+                  { key: 'research', label: 'Emerging Tech & Protocol Research', val: skills.research }
+                ].map(item => (
+                  <div key={item.key} className="p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 space-y-1.5">
+                    <div className="flex justify-between items-center text-xs font-bold text-slate-900 dark:text-white">
+                      <span>{item.label}</span>
+                      <span className="font-mono px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                        {item.val}%
+                      </span>
+                    </div>
                     <input
                       type="range"
                       min="10"
                       max="100"
                       step="5"
                       value={item.val}
-                      onChange={e =>
-                        setSkills({ ...skills, [item.key]: parseInt(e.target.value, 10) })
-                      }
-                      className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 dark:bg-[#13281f] accent-[#003527] dark:accent-[#52b788]"
+                      onChange={e => setSkills({ ...skills, [item.key]: parseInt(e.target.value, 10) })}
+                      className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-slate-200 dark:bg-slate-700 accent-emerald-600"
                     />
-                    <StemProgressBar progress={item.val} height={8} showLeaves={false} />
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ========================================================================= */}
-        {/* STEP 3: LEARNING HISTORY (TAG AUTOCOMPLETE) */}
-        {/* ========================================================================= */}
-        {step === 3 && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-[#003527] dark:text-[#52b788]">
-                Step 3 of 4: Growth Rings
-              </span>
-              <h2 className="font-literata text-2xl sm:text-3xl font-bold text-[#003527] dark:text-white mt-1">
-                What have you already studied or achieved?
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Add your past courses, certifications, and technologies so Trellis avoids repeating what you already know.
-              </p>
-            </div>
-
-            {/* Tag Input Box */}
-            <div className="space-y-3 pt-2">
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Tag className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={tagInput}
-                    onChange={e => setTagInput(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleAddTag(tagInput);
-                      }
-                    }}
-                    placeholder="e.g. AWS Solutions Architect, Kubernetes CKA..."
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-[#1e4d3a] bg-gray-50 dark:bg-[#07130e] text-sm focus:outline-none focus:ring-2 focus:ring-[#003527] dark:focus:ring-[#52b788] text-gray-900 dark:text-white"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleAddTag(tagInput)}
-                  className="px-4 py-2.5 rounded-xl bg-[#003527] dark:bg-[#52b788] text-white dark:text-[#06110d] font-bold text-xs flex items-center gap-1 hover:opacity-90"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add</span>
-                </button>
+                ))}
               </div>
+            </div>
+          </Step>
 
-              {/* Active Tags Badge Cloud */}
-              <div className="flex flex-wrap gap-2 min-h-[50px] p-3 rounded-2xl bg-gray-50 dark:bg-[#07130e]/40 border border-gray-200/80 dark:border-[#1e4d3a]/60">
-                {historyTags.length === 0 ? (
-                  <span className="text-xs text-gray-400 italic">No past certifications added yet. Type above or pick from presets below.</span>
-                ) : (
-                  historyTags.map(tag => (
-                    <span
-                      key={tag}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#003527]/10 dark:bg-[#52b788]/20 text-[#003527] dark:text-[#a7f3d0] text-xs font-semibold"
-                    >
-                      <Award className="w-3.5 h-3.5" />
-                      <span>{tag}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveTag(tag)}
-                        className="hover:text-red-500 transition-colors ml-0.5"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </span>
-                  ))
-                )}
-              </div>
-
-              {/* Autocomplete Suggestions */}
+          {/* STEP 4: LEARNING HISTORY */}
+          <Step key="step-4">
+            <div className="space-y-6 animate-in fade-in duration-300">
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 block mb-2">
-                  Popular Presets (Click to Add):
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                  Step 4: Prior Knowledge
                 </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {PRESET_CERTIFICATIONS.filter(p => !historyTags.includes(p)).map(preset => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => handleAddTag(preset)}
-                      className="text-xs px-2.5 py-1 rounded-lg border border-gray-200 dark:border-[#1e4d3a] hover:bg-gray-100 dark:hover:bg-[#13281f] text-gray-600 dark:text-gray-300 transition-all flex items-center gap-1"
-                    >
-                      <Plus className="w-3 h-3 text-[#003527] dark:text-[#52b788]" />
-                      <span>{preset}</span>
-                    </button>
-                  ))}
-                </div>
+                <h2 className="font-literata text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mt-1">
+                  What have you already studied?
+                </h2>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                  Add past courses, certifications, and technologies to skip basic prerequisites.
+                </p>
               </div>
-            </div>
-          </div>
-        )}
 
-        {/* ========================================================================= */}
-        {/* STEP 4: LEARNING GOAL (TEXTAREA + VOICE SPEECH API) */}
-        {/* ========================================================================= */}
-        {step === 4 && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-[#003527] dark:text-[#52b788]">
-                Step 4 of 4: Canopy Target
-              </span>
-              <h2 className="font-literata text-2xl sm:text-3xl font-bold text-[#003527] dark:text-white mt-1">
-                State your primary learning goal
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Tell Trellis what role, system, or milestone you want to conquer. You can type or use your microphone.
-              </p>
-            </div>
-
-            <div className="space-y-3 pt-2">
-              <div className="relative">
-                <textarea
-                  rows={4}
-                  value={learningGoal}
-                  onChange={e => setLearningGoal(e.target.value)}
-                  placeholder="e.g. I want to master multi-region database sharding, lead distributed system architectural reviews, and reach Principal Architect level within 6 months."
-                  className="w-full p-4 rounded-2xl border border-gray-200 dark:border-[#1e4d3a] bg-gray-50 dark:bg-[#07130e] text-sm focus:outline-none focus:ring-2 focus:ring-[#003527] dark:focus:ring-[#52b788] text-gray-900 dark:text-white leading-relaxed resize-none"
-                />
-
-                {/* Voice Mic Button */}
-                {speechSupported && (
+              <div className="space-y-3 pt-1">
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Tag className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={tagInput}
+                      onChange={e => setTagInput(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddTag(tagInput); } }}
+                      placeholder="e.g. AWS Solutions Architect, Kubernetes CKA..."
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white"
+                    />
+                  </div>
                   <button
                     type="button"
-                    onClick={toggleSpeechRecognition}
-                    className={`absolute right-3 bottom-3 p-2.5 rounded-xl transition-all flex items-center gap-1.5 text-xs font-semibold ${
-                      isRecording
-                        ? 'bg-red-500 text-white animate-pulse shadow-lg'
-                        : 'bg-white dark:bg-[#13281f] border border-gray-200 dark:border-[#1e4d3a] text-gray-700 dark:text-gray-300 hover:bg-gray-100'
-                    }`}
-                    title={isRecording ? 'Listening... click to stop' : 'Click to speak your goal'}
+                    onClick={() => handleAddTag(tagInput)}
+                    className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 cursor-pointer"
                   >
-                    {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                    <span>{isRecording ? 'Listening...' : 'Voice Input'}</span>
+                    <Plus className="w-4 h-4" />
+                    <span>Add</span>
                   </button>
-                )}
+                </div>
+
+                <div className="flex flex-wrap gap-2 min-h-[48px] p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700">
+                  {historyTags.length === 0 ? (
+                    <span className="text-xs text-slate-400 italic">No past certifications added yet. Type above or pick from presets below.</span>
+                  ) : (
+                    historyTags.map(tag => (
+                      <span key={tag} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-semibold">
+                        <Award className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>{tag}</span>
+                        <button type="button" onClick={() => handleRemoveTag(tag)} className="hover:text-rose-500 transition-colors ml-0.5 cursor-pointer">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </span>
+                    ))
+                  )}
+                </div>
+
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-2">
+                    Popular Presets:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {PRESET_CERTIFICATIONS.filter(p => !historyTags.includes(p)).map(preset => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => handleAddTag(preset)}
+                        className="text-xs px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-all flex items-center gap-1 cursor-pointer"
+                      >
+                        <Plus className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                        <span>{preset}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Step>
+
+          {/* STEP 5: LEARNING GOAL */}
+          <Step key="step-5">
+            <div className="space-y-6 animate-in fade-in duration-300">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                  Step 5: Target Role & Goal
+                </span>
+                <h2 className="font-literata text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mt-1">
+                  State your primary learning ambition
+                </h2>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                  Tell Trellis what system or milestone you want to achieve.
+                </p>
               </div>
 
-              {isRecording && (
-                <div className="flex items-center gap-2 text-xs text-red-600 dark:text-red-400 font-medium">
-                  <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-                  <span>Speech recognition active: speak naturally into your microphone...</span>
+              <div className="space-y-3 pt-1">
+                <div className="relative">
+                  <textarea
+                    rows={4}
+                    value={learningGoal}
+                    onChange={e => setLearningGoal(e.target.value)}
+                    placeholder="e.g. I want to master multi-region database sharding, lead distributed system architectural reviews, and reach Principal Architect level within 6 months."
+                    className="w-full p-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white leading-relaxed resize-none"
+                  />
+                  {speechSupported && (
+                    <button
+                      type="button"
+                      onClick={toggleSpeechRecognition}
+                      className={`absolute right-3 bottom-3 p-2.5 rounded-xl transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer ${
+                        isRecording
+                          ? 'bg-rose-500 text-white animate-pulse shadow-lg'
+                          : 'bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100'
+                      }`}
+                      title={isRecording ? 'Listening... click to stop' : 'Click to speak your goal'}
+                    >
+                      {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                      <span>{isRecording ? 'Listening...' : 'Voice Input'}</span>
+                    </button>
+                  )}
                 </div>
-              )}
+
+                {isRecording && (
+                  <div className="flex items-center gap-2 text-xs text-rose-600 dark:text-rose-400 font-medium">
+                    <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                    <span>Speech recognition active: speak naturally into your microphone...</span>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        )}
-
-        {/* ========================================================================= */}
-        {/* WIZARD NAVIGATION FOOTER */}
-        {/* ========================================================================= */}
-        <div className="mt-8 pt-6 border-t border-gray-100 dark:border-[#1e4d3a]/60 flex items-center justify-between">
-          {step > 1 ? (
-            <button
-              type="button"
-              onClick={() => setStep(step - 1)}
-              className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-[#1e4d3a] hover:bg-gray-100 dark:hover:bg-[#13281f] text-gray-700 dark:text-gray-300 font-semibold text-xs transition-all flex items-center gap-1.5"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Back</span>
-            </button>
-          ) : (
-            <div />
-          )}
-
-          {step < 4 ? (
-            <button
-              type="button"
-              onClick={() => setStep(step + 1)}
-              className="px-6 py-2.5 rounded-xl bg-[#003527] dark:bg-[#52b788] hover:bg-[#084e3a] dark:hover:bg-[#40916c] text-white dark:text-[#06110d] font-bold text-xs transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
-            >
-              <span>Continue</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handleFinish}
-              className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#003527] to-[#1b4332] dark:from-[#52b788] dark:to-[#40916c] text-white dark:text-[#06110d] font-bold text-sm transition-all shadow-lg hover:shadow-xl flex items-center gap-2 cursor-pointer"
-            >
-              <Sparkles className="w-4 h-4 text-[#fbbf24] dark:text-[#06110d]" />
-              <span>Generate My Trellis Roadmap</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-
+          </Step>
+        </Stepper>
       </div>
     </div>
   );

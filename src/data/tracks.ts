@@ -67,7 +67,7 @@ export const INITIAL_TRACKS: LearningTrack[] = [
             {
               title: 'Database-per-Service Pattern',
               explanation: 'Services must not share database schemas directly; interactions must strictly occur through public APIs or asynchronous event streams.',
-              codeSnippet: '// Direct DB coupling: ❌ Anti-pattern\n// API Contract: ✅ Correct Pattern\nGET /api/v1/customers/123/credit-limit'
+              codeSnippet: '// Direct DB coupling: Anti-pattern\n// API Contract: Recommended Pattern\nGET /api/v1/customers/123/credit-limit'
             },
             {
               title: 'API Gateway Pattern',

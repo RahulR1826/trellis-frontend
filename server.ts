@@ -1,4 +1,4 @@
-import express from 'express';
+﻿import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
@@ -8,7 +8,7 @@ dotenv.config();
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = 8050;
 
   app.use(express.json());
 
@@ -79,7 +79,7 @@ Give concise, highly practical, technically deep architecture answers. Use Markd
   // Vite Middleware Setup
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { middlewareMode: true, hmr: false },
       appType: 'spa'
     });
     app.use(vite.middlewares);
@@ -97,3 +97,5 @@ Give concise, highly practical, technically deep architecture answers. Use Markd
 }
 
 startServer();
+
+

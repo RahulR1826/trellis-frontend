@@ -117,10 +117,10 @@ export const AIGuideBot: React.FC<AIGuideBotProps> = ({
       {/* Floating AI Guide Button (Matching screenshot) */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-8 right-8 w-14 h-14 bg-white rounded-full shadow-[0_10px_30px_rgba(75,65,225,0.25)] border border-[#bfc9c3]/30 flex items-center justify-center text-[#4b41e1] hover:scale-105 transition-transform z-40 group"
+        className="fixed bottom-8 right-8 w-14 h-14 bg-white rounded-full shadow-[0_10px_30px_rgba(0,53,39,0.18)] border border-[#bfc9c3]/30 flex items-center justify-center text-[#003527] dark:[#52b788] hover:scale-105 transition-transform z-40 group"
         title="Open Trellis AI Architecture Guide"
       >
-        <span className="absolute inset-0 rounded-full border border-[#4b41e1]/30 scale-110 opacity-0 group-hover:opacity-100 group-hover:animate-ping" />
+        <span className="absolute inset-0 rounded-full border border-[#003527] dark:[#52b788]/30 scale-110 opacity-0 group-hover:opacity-100 group-hover:animate-ping" />
         <span className="material-symbols-outlined text-[28px]" style={{ fontVariationSettings: "'FILL' 1" }}>
           smart_toy
         </span>
@@ -132,7 +132,7 @@ export const AIGuideBot: React.FC<AIGuideBotProps> = ({
           {/* Drawer Header */}
           <div className="px-5 py-4 bg-[#f8f9ff] border-b border-[#bfc9c3]/30 flex justify-between items-center">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-[#4b41e1] text-white flex items-center justify-center shadow-xs">
+              <div className="w-8 h-8 rounded-full bg-[#003527] dark:[#52b788] text-white flex items-center justify-center shadow-xs">
                 <Brain className="w-4 h-4" />
               </div>
               <div>
@@ -175,7 +175,7 @@ export const AIGuideBot: React.FC<AIGuideBotProps> = ({
                 {msg.suggestedPrompt && (
                   <button
                     onClick={() => handleSend(msg.suggestedPrompt)}
-                    className="mt-1.5 text-xs text-[#4b41e1] bg-[#4b41e1]/10 hover:bg-[#4b41e1]/20 px-3 py-1 rounded-full text-left flex items-center gap-1.5 transition-colors font-medium"
+                    className="mt-1.5 text-xs text-[#003527] dark:[#52b788] bg-[#003527] dark:[#52b788]/10 hover:bg-[#003527] dark:[#52b788]/20 px-3 py-1 rounded-full text-left flex items-center gap-1.5 transition-colors font-medium"
                   >
                     <Sparkles className="w-3 h-3 shrink-0" />
                     <span>{msg.suggestedPrompt}</span>
@@ -185,7 +185,7 @@ export const AIGuideBot: React.FC<AIGuideBotProps> = ({
             ))}
 
             {loading && (
-              <div className="flex items-center gap-2 text-xs text-[#4b41e1] bg-white p-3 rounded-xl border border-[#bfc9c3]/30 w-fit">
+              <div className="flex items-center gap-2 text-xs text-[#003527] dark:[#52b788] bg-white p-3 rounded-xl border border-[#bfc9c3]/30 w-fit">
                 <Brain className="w-4 h-4 animate-spin" />
                 <span>Trellis AI is evaluating architecture patterns...</span>
               </div>
@@ -225,7 +225,7 @@ export const AIGuideBot: React.FC<AIGuideBotProps> = ({
               onKeyDown={e => {
                 if (e.key === 'Enter') handleSend();
               }}
-              className="flex-1 text-xs md:text-sm p-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#4b41e1] outline-none"
+              className="flex-1 text-xs md:text-sm p-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#003527] dark:[#52b788] outline-none"
             />
             <button
               onClick={() => handleSend()}
@@ -240,3 +240,4 @@ export const AIGuideBot: React.FC<AIGuideBotProps> = ({
     </>
   );
 };
+

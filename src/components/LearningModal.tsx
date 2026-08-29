@@ -88,8 +88,73 @@ export const LearningModal: React.FC<LearningModalProps> = ({
     setSelectedAnswers(prev => ({ ...prev, [questionIdx]: optionIdx }));
   };
 
+  const learningModule = node?.learningModule || {
+    overview: node?.shortDescription || 'Master this architectural milestone with hands-on labs and mental models.',
+    keyConcepts: [
+      {
+        title: 'Architectural Mental Model',
+        explanation: node?.shortDescription || 'Deconstruct patterns and systems trade-offs.',
+        codeSnippet: '// Architecture Implementation Snippet\nexport interface MilestoneTopology {\n  id: string;\n  status: "active";\n}'
+      }
+    ],
+    resources: [
+      { title: 'Designing Distributed Systems Guide', type: 'guide', estMinutes: 25, url: '#' },
+      { title: 'Trellis Architecture RFC Specification', type: 'rfc', estMinutes: 15, url: '#' }
+    ],
+    interactiveDemo: {
+      type: 'rate-limiter',
+      title: `${node?.title || 'Interactive'} Sandbox`,
+      description: 'Explore state transformations and latency dynamics.'
+    },
+    quiz: [
+      {
+        question: `What is the primary architectural objective of ${node?.title || 'this milestone'}?`,
+        options: [
+          'Enforces distributed resilience and bounds failure domains',
+          'Increases system complexity without measurable benefits',
+          'Eliminates all network latency completely',
+          'Requires synchronous monolithic coupling'
+        ],
+        correctIndex: 0,
+        explanation: 'Architectural boundaries isolate blast radiuses and enable high availability.'
+      }
+    ]
+  };
+
+  const keyConcepts = (learningModule.keyConcepts && Array.isArray(learningModule.keyConcepts))
+    ? learningModule.keyConcepts
+    : [
+        {
+          title: 'Architectural Mental Model',
+          explanation: node?.shortDescription || 'Master the essential systems patterns.',
+          codeSnippet: '// Mental model configuration\nconst config = { enabled: true };'
+        }
+      ];
+
+  const resources = (learningModule.resources && Array.isArray(learningModule.resources))
+    ? learningModule.resources
+    : [
+        { title: 'Architecture Systems Guide', type: 'guide', estMinutes: 20, url: '#' },
+        { title: 'Trellis RFC Reference', type: 'rfc', estMinutes: 15, url: '#' }
+      ];
+
+  const quiz = (learningModule.quiz && Array.isArray(learningModule.quiz))
+    ? learningModule.quiz
+    : [
+        {
+          question: `What is the primary architectural objective of ${node?.title || 'this milestone'}?`,
+          options: [
+            'Enforces distributed resilience and bounds failure domains',
+            'Increases system complexity without measurable benefits',
+            'Eliminates all network latency completely',
+            'Requires synchronous monolithic coupling'
+          ],
+          correctIndex: 0,
+          explanation: 'Architectural boundaries isolate blast radiuses and enable high availability.'
+        }
+      ];
+
   const handleSubmitQuiz = () => {
-    const quiz = node.learningModule.quiz;
     let correctCount = 0;
     quiz.forEach((q, i) => {
       if (selectedAnswers[i] === q.correctIndex) {
@@ -120,47 +185,45 @@ export const LearningModal: React.FC<LearningModalProps> = ({
     setQuizScore(0);
   };
 
-  const quiz = node.learningModule.quiz || [];
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#06110d]/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-[#0c1e16] rounded-3xl shadow-2xl border border-[#bfc9c3]/50 dark:border-[#1e4d3a]/60 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 dark:border-slate-700/60 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
         
         {/* Modal Header */}
-        <div className="px-6 py-5 border-b border-[#bfc9c3]/30 dark:border-[#1e4d3a]/60 flex justify-between items-start bg-gray-50 dark:bg-[#07130e]">
+        <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-800 dark:border-slate-700/60 flex justify-between items-start bg-gray-50 dark:bg-slate-800/60">
           <div>
             <div className="flex items-center gap-2 mb-1.5">
               <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
                 node.status === 'done'
                   ? 'bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300'
-                  : 'bg-[#003527]/10 dark:bg-[#52b788]/20 text-[#003527] dark:text-[#a7f3d0]'
+                  : 'bg-emerald-600 dark:text-emerald-400/10 dark:bg-[#52b788]/20 text-emerald-600 dark:text-emerald-400 dark:text-[#a7f3d0]'
               }`}>
-                {node.status === 'done' ? '🌸 Bloomed Milestone' : '🌱 Interactive Growth Sandbox'}
+                {node.status === 'done' ? 'Mastered Milestone' : 'Interactive Growth Sandbox'}
               </span>
               <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
-                {node.learningModule.resources.length} resources available
+                {resources.length} resources available
               </span>
             </div>
-            <h2 className="font-literata text-xl sm:text-2xl font-bold text-[#003527] dark:text-white">
+            <h2 className="font-literata text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400 dark:text-white">
               {node.title}
             </h2>
           </div>
 
           <button
             onClick={onClose}
-            className="p-2 rounded-full text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#13281f] transition-colors"
+            className="p-2 rounded-full text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-[#bfc9c3]/30 dark:border-[#1e4d3a]/60 px-6 bg-white dark:bg-[#0c1e16] gap-6">
+        <div className="flex border-b border-slate-200 dark:border-slate-800 dark:border-slate-700/60 px-6 bg-white dark:bg-slate-900 gap-6">
           <button
             onClick={() => setActiveTab('concepts')}
             className={`py-3 text-xs sm:text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
               activeTab === 'concepts'
-                ? 'border-[#003527] text-[#003527] dark:border-[#52b788] dark:text-[#52b788]'
+                ? 'border-emerald-600 dark:text-emerald-400 text-emerald-600 dark:text-emerald-400 dark:border-[#52b788] dark:text-[#52b788]'
                 : 'border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
@@ -172,7 +235,7 @@ export const LearningModal: React.FC<LearningModalProps> = ({
             onClick={() => setActiveTab('simulator')}
             className={`py-3 text-xs sm:text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
               activeTab === 'simulator'
-                ? 'border-[#003527] text-[#003527] dark:border-[#52b788] dark:text-[#52b788]'
+                ? 'border-emerald-600 dark:text-emerald-400 text-emerald-600 dark:text-emerald-400 dark:border-[#52b788] dark:text-[#52b788]'
                 : 'border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
@@ -184,14 +247,14 @@ export const LearningModal: React.FC<LearningModalProps> = ({
             onClick={() => setActiveTab('quiz')}
             className={`py-3 text-xs sm:text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
               activeTab === 'quiz'
-                ? 'border-[#003527] text-[#003527] dark:border-[#52b788] dark:text-[#52b788]'
+                ? 'border-emerald-600 dark:text-emerald-400 text-emerald-600 dark:text-emerald-400 dark:border-[#52b788] dark:text-[#52b788]'
                 : 'border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
             <Brain className="w-4 h-4" />
             <span>Mastery Quiz</span>
             {quiz.length > 0 && (
-              <span className="bg-[#52b788]/20 text-[#003527] dark:text-[#a7f3d0] text-[10px] px-1.5 py-0.5 rounded-full font-mono font-bold">
+              <span className="bg-[#52b788]/20 text-emerald-600 dark:text-emerald-400 dark:text-[#a7f3d0] text-[10px] px-1.5 py-0.5 rounded-full font-mono font-bold">
                 {quiz.length}Q
               </span>
             )}
@@ -204,30 +267,30 @@ export const LearningModal: React.FC<LearningModalProps> = ({
           {/* TAB 1: CONCEPTS */}
           {activeTab === 'concepts' && (
             <div className="space-y-6">
-              <div className="p-4 bg-[#003527]/5 dark:bg-[#52b788]/10 rounded-2xl border border-[#003527]/10 dark:border-[#52b788]/20 text-gray-800 dark:text-gray-200">
-                <h4 className="font-literata font-bold text-base mb-1 text-[#003527] dark:text-[#a7f3d0]">
+              <div className="p-4 bg-emerald-600 dark:text-emerald-400/5 dark:bg-[#52b788]/10 rounded-2xl border border-emerald-600 dark:text-emerald-400/10 dark:border-[#52b788]/20 text-gray-800 dark:text-gray-200">
+                <h4 className="font-literata font-bold text-base mb-1 text-emerald-600 dark:text-emerald-400 dark:text-[#a7f3d0]">
                   Milestone Overview
                 </h4>
                 <p className="text-xs sm:text-sm leading-relaxed">
-                  {node.learningModule.overview}
+                  {learningModule.overview}
                 </p>
               </div>
 
               {/* Key Concept Cards */}
               <div className="space-y-4">
-                <h4 className="font-literata font-bold text-lg text-[#003527] dark:text-white">
+                <h4 className="font-literata font-bold text-lg text-emerald-600 dark:text-emerald-400 dark:text-white">
                   Key Architectural Patterns
                 </h4>
-                {node.learningModule.keyConcepts.map((concept, idx) => (
+                {keyConcepts.map((concept, idx) => (
                   <div
                     key={idx}
-                    className="p-4 rounded-2xl border border-gray-200 dark:border-[#1e4d3a] bg-white dark:bg-[#0c1e16] space-y-2.5 shadow-xs"
+                    className="p-4 rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 space-y-2.5 shadow-xs"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="w-6 h-6 rounded-full bg-[#003527]/10 dark:bg-[#52b788]/20 text-[#003527] dark:text-[#a7f3d0] flex items-center justify-center text-xs font-bold font-mono">
+                      <span className="w-6 h-6 rounded-full bg-emerald-600 dark:text-emerald-400/10 dark:bg-[#52b788]/20 text-emerald-600 dark:text-emerald-400 dark:text-[#a7f3d0] flex items-center justify-center text-xs font-bold font-mono">
                         {idx + 1}
                       </span>
-                      <h5 className="font-semibold text-sm text-[#003527] dark:text-white">
+                      <h5 className="font-semibold text-sm text-emerald-600 dark:text-emerald-400 dark:text-white">
                         {concept.title}
                       </h5>
                     </div>
@@ -246,20 +309,20 @@ export const LearningModal: React.FC<LearningModalProps> = ({
               </div>
 
               {/* Curated Readings */}
-              <div className="pt-4 border-t border-gray-100 dark:border-[#1e4d3a]/60 space-y-3">
-                <h4 className="font-literata font-bold text-base text-[#003527] dark:text-white">
+              <div className="pt-4 border-t border-gray-100 dark:border-slate-700/60 space-y-3">
+                <h4 className="font-literata font-bold text-base text-emerald-600 dark:text-emerald-400 dark:text-white">
                   Curated Technical References
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {node.learningModule.resources.map((res, i) => (
+                  {resources.map((res, i) => (
                     <div
                       key={i}
-                      className="flex items-center justify-between p-3 rounded-xl border border-gray-200 dark:border-[#1e4d3a] bg-gray-50/50 dark:bg-[#07130e]/40"
+                      className="flex items-center justify-between p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/60/40"
                     >
                       <div className="flex items-center gap-2.5">
-                        <BookOpen className="w-4 h-4 text-[#003527] dark:text-[#52b788]" />
+                        <BookOpen className="w-4 h-4 text-emerald-600 dark:text-emerald-400 dark:text-[#52b788]" />
                         <div>
-                          <p className="text-xs font-semibold text-[#003527] dark:text-white">{res.title}</p>
+                          <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 dark:text-white">{res.title}</p>
                           <span className="text-[10px] text-gray-500 capitalize">
                             {res.type} • {res.estMinutes} mins
                           </span>
@@ -276,8 +339,8 @@ export const LearningModal: React.FC<LearningModalProps> = ({
           {/* TAB 2: INTERACTIVE SIMULATOR */}
           {activeTab === 'simulator' && (
             <div className="space-y-5">
-              <div className="p-4 bg-[#003527]/5 dark:bg-[#52b788]/10 rounded-2xl border border-[#003527]/10 dark:border-[#52b788]/20">
-                <h4 className="font-literata font-bold text-base text-[#003527] dark:text-[#a7f3d0] mb-1">
+              <div className="p-4 bg-emerald-600 dark:text-emerald-400/5 dark:bg-[#52b788]/10 rounded-2xl border border-emerald-600 dark:text-emerald-400/10 dark:border-[#52b788]/20">
+                <h4 className="font-literata font-bold text-base text-emerald-600 dark:text-emerald-400 dark:text-[#a7f3d0] mb-1">
                   Message Broker & Idempotency Sandbox
                 </h4>
                 <p className="text-xs text-gray-600 dark:text-gray-300">
@@ -286,8 +349,8 @@ export const LearningModal: React.FC<LearningModalProps> = ({
               </div>
 
               {/* Publisher Form */}
-              <div className="p-4 rounded-2xl border border-gray-200 dark:border-[#1e4d3a] bg-white dark:bg-[#0c1e16] space-y-3">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#003527] dark:text-[#52b788]">
+              <div className="p-4 rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 space-y-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 dark:text-[#52b788]">
                   Event Producer
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -297,7 +360,7 @@ export const LearningModal: React.FC<LearningModalProps> = ({
                       type="text"
                       value={newTopic}
                       onChange={e => setNewTopic(e.target.value)}
-                      className="w-full text-xs font-mono p-2.5 border border-gray-200 dark:border-[#1e4d3a] rounded-xl bg-gray-50 dark:bg-[#07130e] text-gray-900 dark:text-white outline-none"
+                      className="w-full text-xs font-mono p-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-gray-50 dark:bg-slate-800/60 text-gray-900 dark:text-white outline-none"
                     />
                   </div>
                   <div>
@@ -306,7 +369,7 @@ export const LearningModal: React.FC<LearningModalProps> = ({
                       type="text"
                       value={newPayload}
                       onChange={e => setNewPayload(e.target.value)}
-                      className="w-full text-xs font-mono p-2.5 border border-gray-200 dark:border-[#1e4d3a] rounded-xl bg-gray-50 dark:bg-[#07130e] text-gray-900 dark:text-white outline-none"
+                      className="w-full text-xs font-mono p-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-gray-50 dark:bg-slate-800/60 text-gray-900 dark:text-white outline-none"
                     />
                   </div>
                 </div>
@@ -315,7 +378,7 @@ export const LearningModal: React.FC<LearningModalProps> = ({
                   <button
                     onClick={handlePublishMessage}
                     disabled={simRunning}
-                    className="bg-[#003527] hover:bg-[#084e3a] dark:bg-[#52b788] dark:hover:bg-[#40916c] text-white dark:text-[#06110d] px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all disabled:opacity-50 cursor-pointer"
+                    className="bg-emerald-600 dark:text-emerald-400 hover:bg-[#084e3a] dark:bg-[#52b788] dark:hover:bg-[#40916c] text-white dark:text-[#06110d] px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all disabled:opacity-50 cursor-pointer"
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>Publish Event</span>
@@ -331,18 +394,18 @@ export const LearningModal: React.FC<LearningModalProps> = ({
               </div>
 
               {/* Message Stream Table */}
-              <div className="rounded-2xl border border-gray-200 dark:border-[#1e4d3a] bg-white dark:bg-[#0c1e16] overflow-hidden">
-                <div className="px-4 py-2.5 bg-gray-50 dark:bg-[#07130e] border-b border-gray-200 dark:border-[#1e4d3a] text-xs font-bold text-gray-700 dark:text-gray-300 flex justify-between">
+              <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden">
+                <div className="px-4 py-2.5 bg-gray-50 dark:bg-slate-800/60 border-b border-gray-200 dark:border-slate-700 text-xs font-bold text-gray-700 dark:text-gray-300 flex justify-between">
                   <span>Message Queue & Consumer Logs</span>
                   <span className="font-mono text-gray-400">{messages.length} Events Processed</span>
                 </div>
-                <div className="divide-y divide-gray-100 dark:divide-[#1e4d3a]/40 max-h-64 overflow-y-auto">
+                <div className="divide-y divide-gray-100 dark:divide-slate-700/40 max-h-64 overflow-y-auto">
                   {messages.map((msg, idx) => (
-                    <div key={idx} className="p-3 text-xs flex items-center justify-between hover:bg-gray-50/80 dark:hover:bg-[#13281f]/40">
+                    <div key={idx} className="p-3 text-xs flex items-center justify-between hover:bg-gray-50/80 dark:hover:bg-slate-800/40">
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-[#003527] dark:text-[#52b788]">{msg.id}</span>
-                          <span className="font-mono text-gray-500 bg-gray-100 dark:bg-[#13281f] px-1.5 py-0.5 rounded text-[10px]">
+                          <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 dark:text-[#52b788]">{msg.id}</span>
+                          <span className="font-mono text-gray-500 bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-[10px]">
                             {msg.topic}
                           </span>
                         </div>
@@ -390,10 +453,10 @@ export const LearningModal: React.FC<LearningModalProps> = ({
                 return (
                   <div
                     key={qIdx}
-                    className="p-5 rounded-2xl border border-gray-200 dark:border-[#1e4d3a] bg-white dark:bg-[#0c1e16] space-y-3"
+                    className="p-5 rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 space-y-3"
                   >
                     <div className="flex items-start gap-2.5">
-                      <span className="w-6 h-6 rounded-full bg-[#003527]/10 dark:bg-[#52b788]/20 text-[#003527] dark:text-[#a7f3d0] font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                      <span className="w-6 h-6 rounded-full bg-emerald-600 dark:text-emerald-400/10 dark:bg-[#52b788]/20 text-emerald-600 dark:text-emerald-400 dark:text-[#a7f3d0] font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
                         {qIdx + 1}
                       </span>
                       <h4 className="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white">
@@ -404,7 +467,7 @@ export const LearningModal: React.FC<LearningModalProps> = ({
                     <div className="space-y-2 pl-8">
                       {q.options.map((opt, optIdx) => {
                         const isSelected = selectedAnswers[qIdx] === optIdx;
-                        let optionClass = 'border-gray-200 dark:border-[#1e4d3a] hover:bg-gray-50 dark:hover:bg-[#13281f] text-gray-700 dark:text-gray-300';
+                        let optionClass = 'border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-700 dark:text-gray-300';
 
                         if (quizSubmitted) {
                           if (optIdx === q.correctIndex) {
@@ -413,7 +476,7 @@ export const LearningModal: React.FC<LearningModalProps> = ({
                             optionClass = 'bg-rose-50 dark:bg-rose-950/40 border-rose-400 text-rose-900 dark:text-rose-200';
                           }
                         } else if (isSelected) {
-                          optionClass = 'bg-[#003527]/10 dark:bg-[#52b788]/20 border-[#003527] dark:border-[#52b788] text-[#003527] dark:text-[#a7f3d0] font-bold';
+                          optionClass = 'bg-emerald-600 dark:text-emerald-400/10 dark:bg-[#52b788]/20 border-emerald-600 dark:text-emerald-400 dark:border-[#52b788] text-emerald-600 dark:text-emerald-400 dark:text-[#a7f3d0] font-bold';
                         }
 
                         return (
@@ -466,13 +529,13 @@ export const LearningModal: React.FC<LearningModalProps> = ({
                   <div className="flex gap-2">
                     <button
                       onClick={handleResetQuiz}
-                      className="px-3.5 py-2 rounded-xl border border-gray-200 dark:border-[#1e4d3a] text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100"
+                      className="px-3.5 py-2 rounded-xl border border-gray-200 dark:border-slate-700 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100"
                     >
                       Retry Quiz
                     </button>
                     <button
                       onClick={onClose}
-                      className="px-4 py-2 rounded-xl bg-[#003527] dark:bg-[#52b788] text-white dark:text-[#06110d] text-xs font-bold"
+                      className="px-4 py-2 rounded-xl bg-emerald-600 dark:text-emerald-400 dark:bg-[#52b788] text-white dark:text-[#06110d] text-xs font-bold"
                     >
                       Back to Trellis Path
                     </button>
@@ -483,7 +546,7 @@ export const LearningModal: React.FC<LearningModalProps> = ({
                   <button
                     onClick={handleSubmitQuiz}
                     disabled={Object.keys(selectedAnswers).length < quiz.length}
-                    className="bg-[#003527] hover:bg-[#084e3a] dark:bg-[#52b788] dark:hover:bg-[#40916c] text-white dark:text-[#06110d] px-6 py-2.5 rounded-xl text-xs font-bold transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+                    className="bg-emerald-600 dark:text-emerald-400 hover:bg-[#084e3a] dark:bg-[#52b788] dark:hover:bg-[#40916c] text-white dark:text-[#06110d] px-6 py-2.5 rounded-xl text-xs font-bold transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer"
                   >
                     <span>Submit Mastery Quiz</span>
                     <ArrowRight className="w-4 h-4" />
@@ -498,3 +561,4 @@ export const LearningModal: React.FC<LearningModalProps> = ({
     </div>
   );
 };
+

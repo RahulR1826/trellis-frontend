@@ -79,7 +79,7 @@ export const TrellisVine: React.FC<TrellisVineProps> = ({
           <path d="M0,0 Q12,-15 24,0 Q12,15 0,0" fill="#2b6954" opacity="0.8" />
         </g>
         <g transform="translate(340, 430) rotate(45)">
-          <path d="M0,0 Q10,-12 20,0 Q10,12 0,0" fill="#4b41e1" opacity="0.6" />
+          <path d="M0,0 Q10,-12 20,0 Q10,12 0,0" fill="#52b788" opacity="0.6" />
         </g>
         <g transform="translate(300, 600) rotate(-15)">
           <path d="M0,0 Q10,-12 20,0 Q10,12 0,0" fill="#95d3ba" opacity="0.7" />
@@ -170,26 +170,26 @@ export const TrellisVine: React.FC<TrellisVineProps> = ({
                 className="node-enter w-full max-w-md mr-auto md:ml-16 lg:ml-28 relative"
               >
                 {/* Right Attachment Point Dot with pulse */}
-                <div className="absolute -right-6 top-1/2 -translate-y-1/2 w-4 h-4 bg-[#4b41e1] rounded-full border-4 border-[#f8f9ff] z-20 pulse-ai hidden md:block" />
+                <div className="absolute -right-6 top-1/2 -translate-y-1/2 w-4 h-4 bg-[#003527] dark:[#52b788] rounded-full border-4 border-[#f8f9ff] z-20 pulse-ai hidden md:block" />
 
-                <div className="glass-card rounded-xl p-6 ring-2 ring-[#4b41e1]/30 transition-all duration-300 hover:shadow-[0_20px_50px_rgba(75,65,225,0.14)] relative overflow-hidden bg-white/90">
+                <div className="glass-card rounded-xl p-6 ring-2 ring-[#003527] dark:ring-[#52b788]/30 transition-all duration-300 hover:shadow-[0_20px_50px_rgba(0,53,39,0.14)] relative overflow-hidden bg-white/90">
                   {/* Active Indigo Stripe Accent */}
-                  <div className="absolute top-0 left-0 w-1.5 h-full bg-[#4b41e1]" />
+                  <div className="absolute top-0 left-0 w-1.5 h-full bg-[#003527] dark:[#52b788]" />
 
                   {/* Status & Progress */}
                   <div className="flex justify-between items-start mb-3.5 pl-1">
-                    <div className="inline-flex items-center gap-1.5 bg-[#4b41e1]/10 text-[#4b41e1] px-2.5 py-1 rounded-md text-xs font-semibold">
-                      <Brain className="w-4 h-4 text-[#4b41e1] pulse-ai" />
+                    <div className="inline-flex items-center gap-1.5 bg-[#003527] dark:[#52b788]/10 text-[#003527] dark:[#52b788] px-2.5 py-1 rounded-md text-xs font-semibold">
+                      <Brain className="w-4 h-4 text-[#003527] dark:[#52b788] pulse-ai" />
                       Current Focus
                     </div>
-                    <span className="text-xs font-bold font-mono text-[#4b41e1]">
+                    <span className="text-xs font-bold font-mono text-[#003527] dark:[#52b788]">
                       {node.progress}%
                     </span>
                   </div>
 
                   <h4
                     onClick={() => onSelectNode(node)}
-                    className="font-literata text-2xl font-bold text-[#0d1c2e] mb-2 pl-1 cursor-pointer hover:text-[#4b41e1] transition-colors"
+                    className="font-literata text-2xl font-bold text-[#0d1c2e] mb-2 pl-1 cursor-pointer hover:text-[#003527] dark:[#52b788] transition-colors"
                   >
                     {node.title}
                   </h4>
@@ -200,7 +200,7 @@ export const TrellisVine: React.FC<TrellisVineProps> = ({
                   {/* Custom Progress Trellis */}
                   <div className="w-full h-2 bg-[#dce9ff] rounded-full mb-4 overflow-hidden flex">
                     <div
-                      className="h-full bg-[#4b41e1] rounded-full transition-all duration-700"
+                      className="h-full bg-[#003527] dark:[#52b788] rounded-full transition-all duration-700"
                       style={{ width: `${node.progress}%` }}
                     />
                   </div>
@@ -211,7 +211,7 @@ export const TrellisVine: React.FC<TrellisVineProps> = ({
                       onClick={() => onOpenWhyThis(node)}
                       className="bg-[#dce9ff]/70 hover:bg-[#dce9ff] text-[#0d1c2e] px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 border border-[#bfc9c3]/30 transition-colors shadow-2xs"
                     >
-                      <Lightbulb className="w-3.5 h-3.5 text-[#4b41e1]" />
+                      <Lightbulb className="w-3.5 h-3.5 text-[#003527] dark:[#52b788]" />
                       Recommended based on your quiz
                     </button>
 
@@ -221,8 +221,8 @@ export const TrellisVine: React.FC<TrellisVineProps> = ({
                         title="Great recommendation"
                         className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
                           node.feedback === 'up'
-                            ? 'bg-[#4b41e1] text-white'
-                            : 'hover:bg-[#d5e3fc] text-[#707974] hover:text-[#4b41e1]'
+                            ? 'bg-[#003527] dark:[#52b788] text-white'
+                            : 'hover:bg-[#d5e3fc] text-[#707974] hover:text-[#003527] dark:[#52b788]'
                         }`}
                       >
                         <ThumbsUp className="w-4 h-4" />
@@ -301,7 +301,7 @@ export const TrellisVine: React.FC<TrellisVineProps> = ({
                   </span>
                   <button
                     onClick={() => onOpenWhyThis(node)}
-                    className="text-xs text-[#4b41e1] hover:underline font-semibold"
+                    className="text-xs text-[#003527] dark:[#52b788] hover:underline font-semibold"
                   >
                     Why this?
                   </button>
@@ -314,3 +314,4 @@ export const TrellisVine: React.FC<TrellisVineProps> = ({
     </div>
   );
 };
+

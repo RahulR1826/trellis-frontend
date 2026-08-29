@@ -6,3 +6,8 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Local asset downloads / raw archives
+48_free_icons/
+Netguru_Avatars_Pack/
+download_free-ecommerce-logos-for-adobe-xd/

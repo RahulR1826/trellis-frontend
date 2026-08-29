@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { INITIAL_ROADMAP_NODES, INITIAL_RESOURCE_ITEMS } from './data/roadmapData';
 import { DEFAULT_SKILL_SCORES, TARGET_SKILL_SCORES } from './data/tracks';
+import { loadGeneratedRoadmap } from './services/learningPathEngine';
 import { RoadmapNode, ResourceItem, SkillScores } from './types';
 import { Header, ActiveTab } from './components/Header';
 import { Footer } from './components/Footer';
@@ -19,23 +20,39 @@ import { WhyThisModal } from './components/WhyThisModal';
 import { DiagnosticModal } from './components/DiagnosticModal';
 import { TrellisGrowthBackground } from './components/TrellisGrowthBackground';
 import { AIGuideBot } from './components/AIGuideBot';
+import Dock, { DockItemConfig } from './components/Dock';
+import Navigation4, { Nav4ItemConfig } from './components/Navigation4';
+import { Layers, BookOpen, CheckSquare, Bot, User, Sun, Moon, LogOut } from 'lucide-react';
+
+// Protected tabs: require authentication to view
+const PROTECTED_TABS: ActiveTab[] = ['roadmap', 'resources', 'practice', 'chat', 'profile', 'onboarding'];
 
 function AppContent() {
   const [currentTab, setCurrentTab] = useState<ActiveTab>('landing');
-  const [nodes, setNodes] = useState<RoadmapNode[]>(INITIAL_ROADMAP_NODES);
+  const [nodes, setNodes] = useState<RoadmapNode[]>(loadGeneratedRoadmap() || INITIAL_ROADMAP_NODES);
   const [resources, setResources] = useState<ResourceItem[]>(INITIAL_RESOURCE_ITEMS);
   const [currentScores, setCurrentScores] = useState<SkillScores>(DEFAULT_SKILL_SCORES);
-  const [targetScores, setTargetScores] = useState<SkillScores>(TARGET_SKILL_SCORES);
-  const [shaderActive, setShaderActive] = useState<boolean>(true);
 
   // Modals state
   const [selectedNodeForLearn, setSelectedNodeForLearn] = useState<RoadmapNode | null>(null);
   const [selectedNodeForWhyThis, setSelectedNodeForWhyThis] = useState<RoadmapNode | null>(null);
   const [diagnosticOpen, setDiagnosticOpen] = useState<boolean>(false);
 
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
+  const { isDarkMode, toggleTheme } = useTheme();
 
-  // Node feedback (thumbs up / down / regen)
+  const isPlatformSession = isAuthenticated && !!user?.onboarded && currentTab !== 'landing' && currentTab !== 'auth' && currentTab !== 'onboarding';
+
+  // ── Auth-gated navigation ──────────────────────────────────────────────────
+  const guardedNavigate = (tab: ActiveTab) => {
+    if (PROTECTED_TABS.includes(tab) && !isAuthenticated) {
+      setCurrentTab('auth');
+    } else {
+      setCurrentTab(tab);
+    }
+  };
+
+  // ── Handlers ───────────────────────────────────────────────────────────────
   const handleNodeFeedback = (nodeId: string, action: 'up' | 'down' | 'regen') => {
     setNodes(prev =>
       prev.map(node => {
@@ -47,57 +64,38 @@ function AppContent() {
             shortDescription: `Enhanced with adaptive focus to reinforce prerequisite competencies.`
           };
         }
-        return {
-          ...node,
-          feedback: node.feedback === action ? null : action
-        };
+        return { ...node, feedback: node.feedback === action ? null : action };
       })
     );
   };
 
-  // Resource feedback (thumbs up / down / regen)
   const handleResourceFeedback = (resId: string, action: 'up' | 'down' | 'regen') => {
     setResources(prev =>
       prev.map(res => {
         if (res.id !== resId) return res;
         if (action === 'regen') {
-          return {
-            ...res,
-            title: `${res.title} (Tailored Edition)`,
-            matchScore: Math.min(99, res.matchScore + 2)
-          };
+          return { ...res, title: `${res.title} (Tailored Edition)`, matchScore: Math.min(99, res.matchScore + 2) };
         }
-        return {
-          ...res,
-          feedback: res.feedback === action ? null : action
-        };
+        return { ...res, feedback: res.feedback === action ? null : action };
       })
     );
   };
 
-  // Bookmark toggle
   const handleToggleBookmark = (resId: string) => {
-    setResources(prev =>
-      prev.map(res => (res.id === resId ? { ...res, bookmarked: !res.bookmarked } : res))
-    );
+    setResources(prev => prev.map(res => (res.id === resId ? { ...res, bookmarked: !res.bookmarked } : res)));
   };
 
-  // Node mastery handler
   const handleMasterNode = (nodeId: string) => {
     setNodes(prev => {
       const nodeIndex = prev.findIndex(n => n.id === nodeId);
       return prev.map((node, idx) => {
-        if (node.id === nodeId) {
-          return { ...node, status: 'done' as const, progress: 100 };
-        }
+        if (node.id === nodeId) return { ...node, status: 'done' as const, progress: 100 };
         if (idx === nodeIndex + 1 && (node.status === 'locked' || node.status === 'available')) {
           return { ...node, status: 'in-progress' as const, progress: 25 };
         }
         return node;
       });
     });
-
-    // Increment radar skill scores
     setCurrentScores(prev => ({
       ...prev,
       systems: Math.min(96, (prev.systems || 60) + 5),
@@ -111,50 +109,75 @@ function AppContent() {
   const handleSelectNodeById = (nodeId: string) => {
     const node = nodes.find(n => n.id === nodeId);
     if (node) {
-      setCurrentTab('roadmap');
+      guardedNavigate('roadmap');
       setSelectedNodeForLearn(node);
     }
   };
 
   const currentNode = nodes.find(n => n.status === 'in-progress' || n.status === 'current') || nodes[0];
 
+  // Navigation 4 rail items for authenticated platform users (strictly 5 core tabs)
+  const navItems: Nav4ItemConfig[] = [
+    {
+      icon: <Layers className="w-5 h-5" />,
+      label: 'Roadmap',
+      onClick: () => guardedNavigate('roadmap'),
+      isActive: currentTab === 'roadmap'
+    },
+    {
+      icon: <BookOpen className="w-5 h-5" />,
+      label: 'Resources',
+      onClick: () => guardedNavigate('resources'),
+      isActive: currentTab === 'resources'
+    },
+    {
+      icon: <CheckSquare className="w-5 h-5" />,
+      label: 'Skill-Check',
+      onClick: () => guardedNavigate('practice'),
+      isActive: currentTab === 'practice'
+    },
+    {
+      icon: <Bot className="w-5 h-5" />,
+      label: 'AI Guide',
+      onClick: () => guardedNavigate('chat'),
+      isActive: currentTab === 'chat'
+    },
+    {
+      icon: <User className="w-5 h-5" />,
+      label: 'Profile',
+      onClick: () => guardedNavigate('profile'),
+      isActive: currentTab === 'profile'
+    }
+  ];
+
   return (
-    <div className="min-h-screen relative flex flex-col justify-between font-sans selection:bg-[#003527] selection:text-white dark:selection:bg-[#52b788] dark:selection:text-[#06110d] bg-[#fbfdfc] dark:bg-[#06110d] text-gray-900 dark:text-gray-100 transition-colors duration-300">
-      
-      {/* Background Lattice Pattern */}
-      <div className="fixed inset-0 pointer-events-none lattice-bg z-0 opacity-40 dark:opacity-20" />
-      
-      {/* Background Animation: Living Trellis Canvas - RESTRICTED ONLY TO LANDING PAGE */}
-      {currentTab === 'landing' && shaderActive && (
-        <TrellisGrowthBackground opacity={0.88} />
+    <div className="min-h-screen relative flex flex-col justify-between font-sans selection:bg-emerald-600 selection:text-white dark:selection:bg-emerald-500 dark:selection:text-slate-950 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200 pb-20">
+
+      {/* Living Trellis Canvas — ONLY on Landing page */}
+      {currentTab === 'landing' && (
+        <TrellisGrowthBackground opacity={0.75} />
       )}
 
-      {/* Top Header Navigation */}
+      {/* Header */}
       <Header
         currentTab={currentTab}
-        onSelectTab={setCurrentTab}
-        shaderActive={shaderActive}
-        onToggleShader={() => setShaderActive(prev => !prev)}
+        onSelectTab={guardedNavigate}
       />
 
-      {/* Main App Content Views */}
+      {/* Main Content */}
       <main className="flex-1 w-full max-w-[1280px] mx-auto px-4 md:px-8 pt-24 md:pt-28 pb-16 relative z-10">
-        
-        {/* 1. Landing Page Overview */}
+
+        {/* PUBLIC: Landing — overview only */}
         {currentTab === 'landing' && (
           <LandingPage
-            onStartRoadmap={() => setCurrentTab('roadmap')}
-            onOpenDiagnostic={() => setDiagnosticOpen(true)}
-            onExploreResources={() => setCurrentTab('resources')}
-            onOpenOnboarding={() => setCurrentTab('onboarding')}
-            currentScores={currentScores}
-            targetScores={targetScores}
-            nodes={nodes}
+            onGetStarted={() => guardedNavigate('auth')}
+            onExploreResources={() => guardedNavigate('resources')}
+            onOpenOnboarding={() => guardedNavigate('onboarding')}
           />
         )}
 
-        {/* 2. Interactive Lattice Roadmap View */}
-        {currentTab === 'roadmap' && (
+        {/* PROTECTED: Roadmap */}
+        {currentTab === 'roadmap' && isAuthenticated && (
           <RoadmapLatticeView
             nodes={nodes}
             onSelectNode={node => setSelectedNodeForLearn(node)}
@@ -163,8 +186,8 @@ function AppContent() {
           />
         )}
 
-        {/* 3. Filterable Architecture Resource Library */}
-        {currentTab === 'resources' && (
+        {/* PROTECTED: Resources */}
+        {currentTab === 'resources' && isAuthenticated && (
           <ResourcesView
             resources={resources}
             onToggleBookmark={handleToggleBookmark}
@@ -172,25 +195,25 @@ function AppContent() {
           />
         )}
 
-        {/* 4. Diagnostic Skill-Check Practice Quiz */}
-        {currentTab === 'practice' && (
+        {/* PROTECTED: Skill-Check */}
+        {currentTab === 'practice' && isAuthenticated && (
           <PracticeSkillCheck
-            onNavigateRoadmap={() => setCurrentTab('roadmap')}
+            onNavigateRoadmap={() => guardedNavigate('roadmap')}
           />
         )}
 
-        {/* 5. AI Botanical Mentor Chat Page */}
-        {currentTab === 'chat' && (
+        {/* PROTECTED: Trellis Guide Chat */}
+        {currentTab === 'chat' && isAuthenticated && (
           <ChatPage />
         )}
 
-        {/* 6. Architect Profile with Skill Radar & History */}
-        {currentTab === 'profile' && (
+        {/* PROTECTED: Profile */}
+        {currentTab === 'profile' && isAuthenticated && (
           <ProfileView
             nodes={nodes}
             resources={resources}
             onSelectNode={node => {
-              setCurrentTab('roadmap');
+              guardedNavigate('roadmap');
               setSelectedNodeForLearn(node);
             }}
             onOpenWhyThis={node => setSelectedNodeForWhyThis(node)}
@@ -200,30 +223,30 @@ function AppContent() {
           />
         )}
 
-        {/* 7. Authentication & Registration Screen */}
+        {/* PUBLIC: Auth (login / register) */}
         {currentTab === 'auth' && (
           <AuthPage
             onSuccess={target => {
               if (target === '/onboarding') {
-                setCurrentTab('onboarding');
+                setCurrentTab('onboarding'); // New users → onboarding
               } else {
-                setCurrentTab('roadmap');
+                setCurrentTab('profile');    // Returning users → profile
               }
             }}
             onNavigateHome={() => setCurrentTab('landing')}
           />
         )}
 
-        {/* 8. Onboarding Personalization Wizard */}
-        {currentTab === 'onboarding' && (
+        {/* PROTECTED: Onboarding wizard (new users only) */}
+        {currentTab === 'onboarding' && isAuthenticated && (
           <OnboardingWizard
-            onComplete={() => setCurrentTab('roadmap')}
+            onComplete={() => setCurrentTab('profile')}
           />
         )}
       </main>
 
-      {/* Floating AI Guide Bot Assistant (Available when not in dedicated chat view or auth/onboarding) */}
-      {currentTab !== 'chat' && currentTab !== 'auth' && currentTab !== 'onboarding' && (
+      {/* Floating AI Guide Bot — ONLY on platform pages when authenticated & profile setup */}
+      {isPlatformSession && currentTab !== 'chat' && (
         <AIGuideBot
           currentNode={currentNode as any}
           currentScores={currentScores}
@@ -231,10 +254,15 @@ function AppContent() {
         />
       )}
 
-      {/* Global Footer (Hidden in Auth & Onboarding for minimal distraction) */}
-      {currentTab !== 'auth' && currentTab !== 'onboarding' && (
+      {/* Navigation 4: Vertical Side Navigation Rail with Dock-style Scaling & Tooltips */}
+      {isPlatformSession && (
+        <Navigation4 items={navItems} baseItemSize={42} magnification={58} distance={120} />
+      )}
+
+      {/* Footer — only on landing, roadmap, resources, practice, profile */}
+      {currentTab !== 'auth' && currentTab !== 'onboarding' && currentTab !== 'chat' && (
         <Footer
-          onSelectTab={tab => setCurrentTab(tab as ActiveTab)}
+          onSelectTab={tab => guardedNavigate(tab as ActiveTab)}
           onOpenDiagnostic={() => setDiagnosticOpen(true)}
         />
       )}
@@ -247,7 +275,6 @@ function AppContent() {
           onMasterNode={handleMasterNode}
         />
       )}
-
       {selectedNodeForWhyThis && (
         <WhyThisModal
           node={selectedNodeForWhyThis}
@@ -255,13 +282,10 @@ function AppContent() {
           onFeedback={(nodeId, fb) => handleNodeFeedback(nodeId, fb)}
         />
       )}
-
       {diagnosticOpen && (
         <DiagnosticModal
           onClose={() => setDiagnosticOpen(false)}
-          onUpdateScores={newScores => {
-            setCurrentScores(newScores);
-          }}
+          onUpdateScores={newScores => setCurrentScores(newScores)}
         />
       )}
     </div>

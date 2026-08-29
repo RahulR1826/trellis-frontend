@@ -17,7 +17,8 @@ const DEFAULT_DEMO_USER: UserProfile = {
   id: 'usr_trellis_8829',
   name: 'Elena Rostova',
   email: 'elena.rostova@trellis.grow',
-  avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250',
+  avatarUrl: '/avatars/Artboards_Diversity_Avatars_by_Netguru-01.svg',
+  avatar: '/avatars/Artboards_Diversity_Avatars_by_Netguru-01.svg',
   onboarded: true,
   role: 'Senior Staff Architect Path',
   targetRole: 'Principal Cloud Systems Architect',
@@ -59,7 +60,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return null;
       }
     }
-    return DEFAULT_DEMO_USER; // Default to demo user for seamless live preview experience
+    return null; // Unauthenticated by default — require explicit login/register/demo action
   });
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -86,7 +87,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       name: email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
       email,
       avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${email}`,
-      onboarded: true,
+      onboarded: true, // Returning users skip onboarding and go to profile
       role: 'Growth Learner',
       targetRole: 'Solutions Architect',
       domainInterests: ['Distributed Systems', 'Software Architecture'],
