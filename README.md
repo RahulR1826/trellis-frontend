@@ -49,13 +49,13 @@ cp .env.example .env
 ```bash
 npm run dev
 ```
-Open **[http://localhost:8050](http://localhost:8050)** in your browser.
+Open **[http://localhost:8085](http://localhost:8085)** in your browser.
 
 ---
 
 ## 🛠️ Scripts
 
-- `npm run dev`: Starts the local development server with live reload on port 8050.
+- `npm run dev`: Starts the local development server with live reload on port 8085.
 - `npm run build`: Bundles the client and server for production with zero errors.
 - `npm run start`: Runs the compiled production server.
 - `npm run lint`: Performs a full TypeScript type check.
