@@ -38,14 +38,7 @@ cd trellis-frontend
 npm install
 ```
 
-### 4. Environment Configuration (Optional)
-Copy the example environment file if you want to use custom Gemini AI reasoning:
-```bash
-cp .env.example .env
-```
-*(Trellis includes integrated fallback architecture reasoning out of the box even without an API key).*
-
-### 5. Start Development Server
+### 4. Start Development Server
 ```bash
 npm run dev
 ```
